@@ -78,12 +78,12 @@ README.md, package.json, src/router/index.js
 
 ### 홈 화면
 
-![](./sage-template/pic-01.png)
+![](./pic-01.png)
 
 ### 답변 화면
 
-![](./sage-template/pic-02.png)
+![](./pic-02.png)
 
 ### Mermaid 다이어그램 지원
 
-![](./sage-template/pic-03.png)
+![](./pic-03.png)
