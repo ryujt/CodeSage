@@ -11,18 +11,20 @@ Code Sage는 OpenAI의 API를 활용하여 프로젝트 코드베이스에 대�
 
 ## 설치 방법
 
-1. 이 저장소를 클론합니다:
+1. 이 저장소를 클론하거나 다운받습니다:
    ```
    git clone https://github.com/your-username/code-sage.git
    cd code-sage
    ```
 
-2. 필요한 패키지를 설치합니다:
+2. 모든 파일을 분석 대상이 되는 폴더로 복사합니다.
+
+3. 필요한 패키지를 설치합니다:
    ```
    pip install -r requirements.txt
    ```
 
-3. OpenAI API 키를 설정합니다:
+4. OpenAI API 키를 설정합니다:
    - `sage-settings.json` 파일을 열고 your_openai_api_key 대신 OpenAI의 API 키를 입력합니다:
      ```json
      {
@@ -55,19 +57,33 @@ Code Sage는 OpenAI의 API를 활용하여 프로젝트 코드베이스에 대�
   - 무시할 폴더 및 파일
   - 필수 파일
 
-## 지원되는 파일 형식
+### 지원되는 파일 형식
 
 Code Sage는 다음과 같은 파일 확장자를 지원합니다:
 .md, .js, .html, .css, .json, .py, .java, .ts, .jsx, .tsx, .php, .c, .cpp, .h, .cs, .swift, .rb, .go, .vue, .kt, .sql, .hpp, .m, .mm
 
-## 무시되는 폴더 및 파일
+### 무시되는 폴더 및 파일
 
 기본적으로 다음 폴더와 파일은 처리에서 제외됩니다:
 
 - 폴더: sage-template, node_modules, cypress, .gradle, .idea, build, test, bin, dist, .vscode, .git, .github, .expo
 - 파일: CodeSage.py, CodeSage-Claude.py, sage-settings.json, package-lock.json
 
-## 필수 파일
+### 필수 파일
 
 다음 파일들은 항상 처리됩니다:
 README.md, package.json, src/router/index.js
+
+## 스크린샷
+
+### 홈 화면
+
+![](./sage-template/pic-01.png)
+
+### 답변 화면
+
+![](./sage-template/pic-02.png)
+
+### Mermaid 다이어그램 지원
+
+![](./sage-template/pic-03.png)

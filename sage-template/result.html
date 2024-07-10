@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Answer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        pre {
+            background-color: #f1f3f5;
+            padding: 15px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .answer {
+            overflow-wrap: break-word;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .mermaid {
+            background-color: white;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Question & Answer</h1>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">Question</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ question }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Answer</h5>
+            </div>
+            <div class="card-body">
+                <div class="answer" id="answer-content">{{ answer | e }}</div>
+            </div>
+        </div>
+        <a href="/" class="btn btn-primary mt-3">Ask Another Question</a>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const answerElement = document.getElementById('answer-content');
+            const markdownContent = answerElement.textContent;
+            const htmlContent = marked.parse(markdownContent);
+            answerElement.innerHTML = htmlContent;
+
+            // 복사 버튼 생성 함수
+            function createCopyButton(text) {
+                const button = document.createElement('button');
+                button.textContent = 'Copy';
+                button.className = 'btn btn-sm btn-secondary copy-btn';
+                button.addEventListener('click', function () {
+                    navigator.clipboard.writeText(text).then(() => {
+                        button.textContent = 'Copied!';
+                        setTimeout(() => {
+                            button.textContent = 'Copy';
+                        }, 2000);
+                    });
+                });
+                return button;
+            }
+
+            // 일반 코드 블록에 복사 버튼 추가
+            document.querySelectorAll('pre code:not(.language-mermaid)').forEach((block) => {
+                hljs.highlightBlock(block);
+                const button = createCopyButton(block.textContent);
+                block.parentNode.insertBefore(button, block);
+            });
+
+            // Mermaid 다이어그램 렌더링
+            mermaid.initialize({
+                startOnLoad: false,
+                securityLevel: 'loose',
+                theme: 'default'
+            });
+
+            const mermaidCallback = function (id) {
+                console.log("Mermaid rendering completed for id:", id);
+            };
+
+            const renderMermaid = function () {
+                document.querySelectorAll('code.language-mermaid').forEach((el, index) => {
+                    const mermaidDiv = document.createElement('div');
+                    mermaidDiv.classList.add('mermaid');
+                    mermaidDiv.id = `mermaid-${index}`;
+                    mermaidDiv.textContent = el.textContent;
+
+                    // 복사 버튼 생성 및 추가
+                    const copyButton = createCopyButton(el.textContent);
+
+                    // 컨테이너 div 생성
+                    const containerDiv = document.createElement('div');
+                    containerDiv.style.position = 'relative';
+
+                    // 복사 버튼을 컨테이너의 우상단에 위치시킴
+                    copyButton.style.position = 'absolute';
+                    copyButton.style.top = '5px';
+                    copyButton.style.right = '5px';
+
+                    // 요소들을 조립
+                    containerDiv.appendChild(mermaidDiv);
+                    containerDiv.appendChild(copyButton);
+
+                    // 원래의 코드 블록을 새로운 구조로 교체
+                    el.parentNode.replaceChild(containerDiv, el);
+                });
+
+                mermaid.init(undefined, '.mermaid', mermaidCallback);
+            };
+
+            if (document.readyState === 'complete') {
+                renderMermaid();
+            } else {
+                window.addEventListener('load', renderMermaid);
+            }
+        });
+    </script>
+</body>
+
+</html>
