@@ -24,6 +24,11 @@ Code Sage는 OpenAI의 API를 활용하여 프로젝트 코드베이스에 대�
    ```
    pip install -r requirements.txt
    ```
+   or
+   ```
+   pip3 install -r requirements.txt
+   ```
+
 
 4. OpenAI API 키를 설정합니다:
    - `sage-settings.json` 파일을 열고 your_openai_api_key 대신 OpenAI의 API 키를 입력합니다:
@@ -42,6 +47,10 @@ Code Sage는 OpenAI의 API를 활용하여 프로젝트 코드베이스에 대�
 1. 애플리케이션을 실행합니다:
    ```
    python CodeSage.py
+   ```
+   or
+   ```
+   python3 CodeSage.py
    ```
 
 2. 웹 브라우저에서 `http://localhost:8080`에 접속합니다.
