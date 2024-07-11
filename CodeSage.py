@@ -13,7 +13,9 @@ import PyPDF2
 
 app = Flask(__name__, template_folder='sage-template')
 
-MODEL = 'text-embedding-3-large'
+EMBEDDINGS_MODEL = 'text-embedding-3-large'
+CHAT_MODEL = 'gpt-4o'
+TOKEN_COUNTER_MODEL = 'gpt-4'
 
 HEADERS = {}
 API_URL = "https://api.openai.com/v1/embeddings"
@@ -85,7 +87,7 @@ def settings_route():
 def get_embedding(text):
     data = json.dumps({
         "input": text,
-        "model": MODEL,
+        "model": EMBEDDINGS_MODEL,
         "encoding_format": "float"
     })
     response = requests.post(API_URL, headers=HEADERS, data=data)
@@ -123,7 +125,7 @@ def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top
 
 def get_chat_response(messages):
     data = json.dumps({
-        "model": "gpt-4o",
+        "model": CHAT_MODEL,
         "messages": messages,
         "temperature": 0
     })
@@ -173,7 +175,7 @@ def hash_content(content):
     return hashlib.md5(content.encode('utf-8', errors='replace')).hexdigest()
 
 def count_tokens(text):
-    encoding = tiktoken.encoding_for_model("gpt-4")
+    encoding = tiktoken.encoding_for_model(TOKEN_COUNTER_MODEL)
     return len(encoding.encode(text))
 
 @app.route('/', methods=['GET', 'POST'])
