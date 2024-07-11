@@ -100,7 +100,7 @@ def load_embeddings(file_path):
                 embeddings[data['filename']] = data
     return embeddings
 
-def find_most_similar(query_embedding, embeddings, similarity_threshold=0.25, top_k=100):
+def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top_k=100):
     global settings
     similarities = {}
     for filename, data in embeddings.items():
@@ -195,7 +195,7 @@ def index():
         
         relevant_docs = []
         total_tokens = 0
-        max_tokens = 120000 
+        max_tokens = 100000 
 
         for filename, similarity in similar_files:
             content = embeddings[filename]['content']            
