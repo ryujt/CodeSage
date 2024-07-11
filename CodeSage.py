@@ -9,6 +9,7 @@ import tiktoken
 import hashlib
 import shutil
 import chardet
+import PyPDF2
 
 app = Flask(__name__, template_folder='sage-template')
 
@@ -138,7 +139,22 @@ def get_file_paths(folder_path):
                 file_paths.append(os.path.join(root, file))
     return file_paths
 
+def pdf_to_text(pdf_path):
+    try:
+        with open(pdf_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+        return text
+    except Exception as e:
+        print(f"Error processing PDF {pdf_path}: {str(e)}")
+        return ""
+
 def read_file(file_path):
+    if file_path.lower().endswith('.pdf'):
+        return pdf_to_text(file_path)
+    
     with open(file_path, 'rb') as file:
         raw_data = file.read()
     
@@ -179,7 +195,7 @@ def index():
         
         relevant_docs = []
         total_tokens = 0
-        max_tokens = 120000  # GPT-4의 토큰 제한을 고려하여 여유 있게 설정
+        max_tokens = 120000 
 
         for filename, similarity in similar_files:
             content = embeddings[filename]['content']            

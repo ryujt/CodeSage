@@ -5,3 +5,4 @@ scikit-learn==1.5.1
 nltk==3.8.1
 tiktoken==0.5.1
 chardet==5.2.0
+PyPDF2==3.0.1

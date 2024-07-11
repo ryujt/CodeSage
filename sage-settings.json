@@ -1,6 +1,6 @@
 {
   "api_key": "your_openai_api_key",
-  "extensions": ".md, .js, .html, .css, .json, .py, .java, .ts, .jsx, .tsx, .php, .c, .cpp, .h, .cs, .swift, .rb, .go, .vue, .kt, .sql, .hpp, .m, .mm",
+  "extensions": ".md, .pdf, .js, .html, .css, .json, .py, .java, .ts, .jsx, .tsx, .php, .c, .cpp, .h, .cs, .swift, .rb, .go, .vue, .kt, .sql, .hpp, .m, .mm",
   "ignore_folders": "sage-template, node_modules, cypress, .gradle, .idea, build, test, bin , dist, .vscode, .git, .github, .expo",
   "ignore_files": "CodeSage.py, CodeSage-Claude.py, sage-settings.json, package-lock.json",
   "essential_files": "README.md, package.json, src/router/index.js"  
