@@ -15,12 +15,12 @@ Code Sage는 OpenAI의 API를 활용하여 프로젝트 코드베이스에 대�
 
 1. 이 저장소를 클론하거나 다운받습니다:
    ```
-   git clone https://github.com/your-username/code-sage.git
-   cd code-sage
+   git clone git@github.com:ryujt/CodeSage.git
+   cd CodeSage
    ```
 
 2. 다운받은 모든 파일을 분석 대상이 되는 폴더로 복사합니다.
-   * 복사한 파일이 있는 폴더와 그 밑에 있는 모든 폴더의 파일을 검핵하게 됩니다.
+   * 복사한 파일이 있는 폴더와 그 밑에 있는 모든 폴더의 파일을 검색하게 됩니다.
    * 설정에 의해서 참조되는 파일의 확장자를 결정할 수 있습니다.
    * 설정 초기 값들을 확인하세요.
 
