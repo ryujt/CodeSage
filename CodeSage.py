@@ -2,7 +2,7 @@ import os
 import requests
 import json
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from sklearn.metrics.pairwise import cosine_similarity
 import nltk
 import tiktoken
@@ -10,8 +10,14 @@ import hashlib
 import shutil
 import chardet
 import PyPDF2
+import logging
+from requests.exceptions import RequestException
 
 app = Flask(__name__, template_folder='sage-template')
+app.secret_key = 'your_secret_key_here'  # Flask의 세션을 위해 필요합니다
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 EMBEDDINGS_MODEL = 'text-embedding-3-large'
 CHAT_MODEL = 'gpt-4o'
@@ -45,7 +51,6 @@ def load_settings():
         with open(SETTINGS_FILE, 'w') as f:
             json.dump(settings, f, indent=2)
     
-    # 문자열 데이터를 리스트로 변환하지 않음
     for key in ['extensions', 'ignore_folders', 'ignore_files', 'essential_files']:
         if isinstance(settings[key], str):
             settings[key] = settings[key].split(', ')
@@ -55,7 +60,11 @@ def load_settings():
         "Content-Type": "application/json"
     }
 
-    print("Loaded settings:", settings)
+    logging.info("Settings loaded.")
+    logging.info(f"API URL: {API_URL}")
+    logging.info(f"EMBEDDINGS_MODEL: {EMBEDDINGS_MODEL}")
+    logging.info(f"CHAT_MODEL: {CHAT_MODEL}")
+    # API 키는 보안상 로그에 출력하지 않습니다.
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings_route():
@@ -73,6 +82,7 @@ def settings_route():
             json.dump(new_settings, f, indent=2)
         
         load_settings() 
+        flash('설정이 성공적으로 업데이트되었습니다.', 'success')
         return redirect(url_for('settings_route'))
     
     load_settings()
@@ -90,8 +100,26 @@ def get_embedding(text):
         "model": EMBEDDINGS_MODEL,
         "encoding_format": "float"
     })
-    response = requests.post(API_URL, headers=HEADERS, data=data)
-    return response.json()['data'][0]['embedding']
+    try:
+        response = requests.post(API_URL, headers=HEADERS, data=data)
+        response.raise_for_status()
+        result = response.json()
+        if 'data' not in result or not result['data']:
+            raise ValueError(f"Unexpected API response structure: {result}")
+        return result['data'][0]['embedding']
+    except RequestException as e:
+        if hasattr(e, 'response') and e.response is not None:
+            if e.response.status_code == 401:
+                logging.error("API 키 인증 실패. API 키를 확인하세요.")
+                raise ValueError("API 키 인증 실패") from e
+            else:
+                logging.error(f"API 요청 실패: 상태 코드 {e.response.status_code}")
+        else:
+            logging.error(f"API 요청 실패: {str(e)}")
+        raise
+    except (KeyError, IndexError, ValueError) as e:
+        logging.error(f"API 응답 처리 오류: {str(e)}")
+        raise
 
 def load_embeddings(file_path):
     embeddings = {}
@@ -110,14 +138,12 @@ def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top
         if similarity >= similarity_threshold or filename in settings['essential_files']:
             similarities[filename] = similarity
 
-    # 필수 파일들을 결과에 추가
     for filename in settings['essential_files']:
         if filename in embeddings and filename not in similarities:
-            similarities[filename] = 0  # 유사도가 낮더라도 포함
+            similarities[filename] = 0
 
     sorted_files = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
     
-    # 필수 파일들을 상위로 올리기
     essential_files = [(f, s) for f, s in sorted_files if f in settings['essential_files']]
     other_files = [(f, s) for f, s in sorted_files if f not in settings['essential_files']]
     
@@ -129,8 +155,13 @@ def get_chat_response(messages):
         "messages": messages,
         "temperature": 0
     })
-    response = requests.post(CHAT_API_URL, headers=HEADERS, data=data)
-    return response.json()['choices'][0]['message']['content']
+    try:
+        response = requests.post(CHAT_API_URL, headers=HEADERS, data=data)
+        response.raise_for_status()
+        return response.json()['choices'][0]['message']['content']
+    except RequestException as e:
+        logging.error(f"Chat API 요청 실패: {str(e)}")
+        raise
 
 def get_file_paths(folder_path):
     file_paths = []
@@ -150,7 +181,7 @@ def pdf_to_text(pdf_path):
                 text += page.extract_text()
         return text
     except Exception as e:
-        print(f"Error processing PDF {pdf_path}: {str(e)}")
+        logging.error(f"Error processing PDF {pdf_path}: {str(e)}")
         return ""
 
 def read_file(file_path):
@@ -183,17 +214,21 @@ def index():
     if request.method == 'POST':
         question = request.form['question']
         
-        print("\n===== 질문 임베딩 생성 중 =====")
-        question_embedding = get_embedding(question)
-        print("질문 임베딩 생성 완료")
+        logging.info("질문 임베딩 생성 중")
+        try:
+            question_embedding = get_embedding(question)
+            logging.info("질문 임베딩 생성 완료")
+        except Exception as e:
+            flash(f"임베딩 생성 중 오류 발생: {str(e)}", "error")
+            return render_template('index.html')
         
-        print("\n===== 유사한 문서 찾는 중 =====")
+        logging.info("유사한 문서 찾는 중")
         embeddings = load_embeddings(EMBEDDINGS_FILE)
         similar_files = find_most_similar(question_embedding, embeddings)
         
-        print("\n===== 유사도로 선택된 파일 =====")
+        logging.info("유사도로 선택된 파일:")
         for filename, similarity in similar_files:
-            print(f"{filename}: {similarity}")
+            logging.info(f"{filename}: {similarity}")
         
         relevant_docs = []
         total_tokens = 0
@@ -213,9 +248,9 @@ def index():
             })
             total_tokens += doc_tokens
 
-        print(f"\n===== 프롬프트 생성 정보 =====")
-        print(f"총 토큰 수: {total_tokens}")
-        print(f"사용된 파일: {[doc['filename'] for doc in relevant_docs]}")
+        logging.info(f"프롬프트 생성 정보:")
+        logging.info(f"총 토큰 수: {total_tokens}")
+        logging.info(f"사용된 파일: {[doc['filename'] for doc in relevant_docs]}")
 
         system_message = """You are an AI assistant specialized in answering questions based on provided context. 
 Your task is to:
@@ -237,11 +272,13 @@ Context:
             {"role": "user", "content": user_message}
         ]
 
-        print("\n===== OpenAI API 호출 중 =====")
-        answer = get_chat_response(messages)
-        
-        print("\n===== OpenAI 응답 정보 =====")
-        print(f"응답 길이: {len(answer)} 글자")
+        logging.info("OpenAI API 호출 중")
+        try:
+            answer = get_chat_response(messages)
+            logging.info(f"응답 길이: {len(answer)} 글자")
+        except Exception as e:
+            flash(f"OpenAI API 호출 중 오류 발생: {str(e)}", "error")
+            return render_template('index.html')
         
         return render_template('result.html', question=question, answer=answer)
     
@@ -255,12 +292,13 @@ def extract_embeddings():
 
     existing_embeddings = load_embeddings(backup_file)
     file_paths = get_file_paths('.')
+    error_files = []
 
     with open(EMBEDDINGS_FILE, 'w', encoding='utf-8') as f:
         for file_path in file_paths:
             try:
                 relative_path = os.path.relpath(file_path)
-                print(f"Processing {relative_path}")
+                logging.info(f"Processing {relative_path}")
                 
                 content = read_file(file_path)
                 content_hash = hash_content(content)
@@ -268,7 +306,7 @@ def extract_embeddings():
                 if relative_path in existing_embeddings and existing_embeddings[relative_path]['content_hash'] == content_hash:
                     file_data = existing_embeddings[relative_path]
                 else:
-                    print(f"  - Changes detected or new file, generating new embedding")
+                    logging.info(f"  - Changes detected or new file, generating new embedding")
                     embedding = get_embedding(content)
                     file_data = {
                         "filename": relative_path, 
@@ -280,9 +318,16 @@ def extract_embeddings():
                 f.write(json.dumps(file_data, ensure_ascii=False) + '\n')
 
             except Exception as e:
-                print(f"Error processing {file_path}: {str(e)}")
+                logging.error(f"Error processing {file_path}: {str(e)}")
+                error_files.append(relative_path)
 
-    print(f"Embedding extraction complete. Results saved to {EMBEDDINGS_FILE}")
+    logging.info(f"Embedding extraction complete. Results saved to {EMBEDDINGS_FILE}")
+    if error_files:
+        error_message = f"The following files encountered errors and were skipped: {', '.join(error_files)}"
+        logging.warning(error_message)
+        flash(error_message, "warning")
+    else:
+        flash("임베딩 추출이 성공적으로 완료되었습니다.", "success")
     return redirect(url_for('index'))
 
 if __name__ == "__main__":

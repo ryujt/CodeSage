@@ -22,6 +22,19 @@
             <i class="bi bi-gear"></i>
         </a>
         <h1 class="mb-4">Code Sage</h1>
+        
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         <form action="/extract_embeddings" method="POST" class="mb-4">
             <button type="submit" class="btn btn-secondary">Refresh Embeddings</button>
         </form>
