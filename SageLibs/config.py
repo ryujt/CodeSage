@@ -1,0 +1,65 @@
+import json
+import logging
+
+EMBEDDINGS_MODEL = 'text-embedding-3-large'
+CHAT_MODEL = 'gpt-4o'
+TOKEN_COUNTER_MODEL = 'gpt-4'
+
+API_URL = "https://api.openai.com/v1/embeddings"
+CHAT_API_URL = "https://api.openai.com/v1/chat/completions"
+
+EMBEDDINGS_FILE = 'embeddings.jsonl'
+SETTINGS_FILE = 'SageSettings.json'
+
+settings = {}
+
+def load_settings():
+    global settings
+    
+    default_settings = {
+        'api_key': 'your_openai_api_key',
+        'extensions': '.md, .vue, .js, .json, .css, .html',
+        'ignore_folders': 'SageLibs, SageTemplate, node_modules, cypress',
+        'ignore_files': 'CodeSage.py, SageSettings.json, package-lock.json',
+        'essential_files': 'README.md, package.json, src/router/index.js'
+    }
+    
+    try:
+        with open(SETTINGS_FILE, 'r') as f:
+            settings.update(json.load(f))
+    except FileNotFoundError:
+        settings.update(default_settings)
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
+    
+    for key in ['extensions', 'ignore_folders', 'ignore_files', 'essential_files']:
+        if isinstance(settings[key], str):
+            settings[key] = [item.strip() for item in settings[key].split(',')]
+        elif isinstance(settings[key], list):
+            settings[key] = [item.strip() for item in settings[key]]
+
+    logging.info("Settings loaded.")
+    logging.info(f"API URL: {API_URL}")
+    logging.info(f"EMBEDDINGS_MODEL: {EMBEDDINGS_MODEL}")
+    logging.info(f"CHAT_MODEL: {CHAT_MODEL}")
+
+    return settings
+
+def get_settings():
+    global settings
+    if not settings:
+        load_settings()
+    return settings
+
+def update_settings(new_settings):
+    global settings
+    settings.update(new_settings)
+    
+    for key in ['extensions', 'ignore_folders', 'ignore_files', 'essential_files']:
+        if isinstance(settings[key], str):
+            settings[key] = settings[key].split(', ')
+    
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f, indent=2)
+
+    logging.info("Settings updated.")
