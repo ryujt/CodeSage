@@ -3,7 +3,7 @@
 Code Sage는 OpenAI의 API를 활용하여 프로젝트 코드베이스에 대한 질문에 답변하는 AI 기반 도구입니다. 
 이 도구는 개발자들이 프로젝트의 구조와 기능을 빠르게 이해하고, 코드 관련 질문에 대한 답변을 얻는 데 도움을 줍니다.
 
-<iframe width="800" height="450" src="https://www.youtube.com/embed/-ip-y4tGfp4?si=hooI_OlI6ybOSon4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[동영상 설명](https://youtu.be/-ip-y4tGfp4?si=mNVI9VRhF8h_IgGS)
 
 ## 주요 기능
 
