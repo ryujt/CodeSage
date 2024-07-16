@@ -46,6 +46,8 @@
   "ignore_files": [
     "CodeSage.py",
     "SageSettings.json",
+    "question_history.json", 
+    "embeddings.jsonl",
     "package-lock.json"
   ],
   "essential_files": [
