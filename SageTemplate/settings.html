@@ -15,8 +15,8 @@
         <h1 class="mb-4">Code Sage Settings</h1>
         <form id="settingsForm" method="POST" action="{{ url_for('settings_route') }}">
             <div class="mb-3">
-                <label for="apiKey" class="form-label">API Key:</label>
-                <input type="text" class="form-control" id="apiKey" name="apiKey" value="{{ api_key }}">
+                <label for="apiKey" class="form-label">OpenAI API Key:</label>
+                <input type="text" class="form-control" id="apiKey" name="apiKey" value="{{ openai_api_key }}">
             </div>
             <div class="mb-3">
                 <label for="extensions" class="form-label">Extensions:</label>

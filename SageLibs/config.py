@@ -8,6 +8,9 @@ TOKEN_COUNTER_MODEL = 'gpt-4'
 API_URL = "https://api.openai.com/v1/embeddings"
 CHAT_API_URL = "https://api.openai.com/v1/chat/completions"
 
+CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
+CLAUDE_MODEL = 'claude-3-sonnet-20240229' 
+
 EMBEDDINGS_FILE = 'embeddings.jsonl'
 SETTINGS_FILE = 'SageSettings.json'
 
@@ -17,7 +20,7 @@ def load_settings():
     global settings
     
     default_settings = {
-        'api_key': 'your_openai_api_key',
+        'openai_api_key': 'your_openai_api_key',
         'extensions': '.md, .vue, .js, .json, .css, .html',
         'ignore_folders': 'SageLibs, SageTemplate, node_modules, cypress',
         'ignore_files': 'CodeSage.py, SageSettings.json, package-lock.json',

@@ -1,5 +1,5 @@
 {
-  "api_key": "your_openai_api_key",
+  "openai_api_key": "your_openai_api_key",
   "extensions": [
     ".md",
     ".vue",

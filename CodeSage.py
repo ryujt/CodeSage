@@ -57,33 +57,18 @@ def index():
     logging.debug(f"총 토큰 수: {total_tokens}")
     logging.debug(f"사용된 파일: {[doc['filename'] for doc in relevant_docs]}")
 
-    system_message = """You are an AI assistant specialized in answering questions based on provided context. 
-Your task is to:
-    1. Then, Analyze the full content of the documents if necessary.
-    2. Answer the user's question accurately using information from the context.
-    3. If the context doesn't contain enough information, say so and provide the best possible answer based on your general knowledge.
-    4. Cite the filenames of relevant documents in your answer.
-    5. If appropriate, provide code snippets or examples from the context to support your answer.
-    6. When creating diagrams, use mermaid."""
-
     user_message = f"""Question: {question}
 
 Please answer the question based on the provided context. 
 Context:
         {json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"""
     
-    messages = [
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": user_message}
-    ]
-
-    logging.debug("OpenAI API 호출 시작")
     try:
-        answer = get_chat_response(messages)
+        answer = get_chat_response(user_message)
         logging.debug(f"응답 길이: {len(answer)} 글자")
     except Exception as e:
-        logging.error(f"OpenAI API 호출 중 오류 발생: {str(e)}", exc_info=True)
-        flash(f"OpenAI API 호출 중 오류 발생: {str(e)}", "error")
+        logging.error(f"API 호출 중 오류 발생: {str(e)}", exc_info=True)
+        flash(f"API 호출 중 오류 발생: {str(e)}", "error")
         return render_template('index.html')
     
     return render_template('result.html', question=question, answer=answer)
@@ -93,7 +78,7 @@ def settings_route():
     if request.method == 'POST':
         logging.debug("설정 업데이트 시작")
         new_settings = {
-            'api_key': request.form.get('apiKey', 'your_openai_api_key'),
+            'openai_api_key': request.form.get('apiKey', 'your_openai_api_key'),
             'extensions': request.form.get('extensions'),
             'ignore_folders': request.form.get('ignoreFolders'),
             'ignore_files': request.form.get('ignoreFiles'),
@@ -112,7 +97,7 @@ def settings_route():
                            ignore_folders=", ".join(settings['ignore_folders']),
                            ignore_files=", ".join(settings['ignore_files']),
                            essential_files=", ".join(settings['essential_files']),
-                           api_key=settings['api_key'])
+                           openai_api_key=settings['openai_api_key'])
 
 @app.route('/extract_embeddings', methods=['POST'])
 def extract_embeddings():
