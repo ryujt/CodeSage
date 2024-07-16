@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +13,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
         }
 
         pre {
@@ -22,6 +21,8 @@
             padding: 15px;
             border-radius: 5px;
             position: relative;
+            overflow-x: auto;
+            white-space: pre-wrap; 
         }
 
         .answer {
@@ -41,29 +42,54 @@
             padding: 10px;
             margin-bottom: 10px;
         }
+
+        .history {
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .header-title {
+            cursor: pointer;
+        }    
     </style>
 </head>
 
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Question & Answer</h1>
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title">Question</h5>
+        <div class="row">
+            <div class="col-12 mb-4">
+                <h1 class="header-title" onclick="window.location='/'">Code Sage</h1>
             </div>
-            <div class="card-body">
-                <p class="card-text">{{ question }}</p>
+            <!-- Question History Column -->
+            <div class="col-md-4">
+                <h5>Question History</h5>
+                <div class="list-group history">
+                    {% for item in questions %}
+                        <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="list-group-item list-group-item-action">{{ item.title }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- Main Content Column -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title">Question</h5>
+                    </div>
+                    <div class="card-body">
+                        <pre class="card-text">{{ question }}</pre>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Answer</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="answer" id="answer-content">{{ answer | e }}</div>
+                    </div>
+                </div>
+                <a href="/" class="btn btn-primary mt-3">Ask Another Question</a>
             </div>
         </div>
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Answer</h5>
-            </div>
-            <div class="card-body">
-                <div class="answer" id="answer-content">{{ answer | e }}</div>
-            </div>
-        </div>
-        <a href="/" class="btn btn-primary mt-3">Ask Another Question</a>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
@@ -147,5 +173,4 @@
         });
     </script>
 </body>
-
 </html>

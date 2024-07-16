@@ -7,71 +7,82 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from SageLibs.config import EMBEDDINGS_FILE
 from SageLibs.config import load_settings, get_settings, update_settings
 from SageLibs import get_embedding, get_chat_response, load_embeddings, find_most_similar, get_file_paths, read_file, hash_content, count_tokens
+from SageLibs.questions import get_all_questions, get_question_by_id, insert_question
 
 app = Flask(__name__, template_folder='SageTemplate')
 app.secret_key = 'your_secret_key_here'
 
+@app.route('/question/<int:question_id>')
+def show_question(question_id):
+    question_record = get_question_by_id(question_id)
+    if not question_record:
+        return redirect(url_for('index'))
+    
+    return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions())
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    if request.method == 'GET':
-        return render_template('index.html')
-    
-    question = request.form['question']
-    
-    logging.debug("질문 임베딩 생성 시작")
-    try:
-        question_embedding = get_embedding(question)
-        logging.debug("질문 임베딩 생성 완료")
-    except Exception as e:
-        logging.error(f"임베딩 생성 중 오류 발생: {str(e)}", exc_info=True)
-        flash(f"임베딩 생성 중 오류 발생: {str(e)}", "error")
-        return render_template('index.html')
-    
-    logging.debug("유사한 문서 찾기 시작")
-    embeddings = load_embeddings(EMBEDDINGS_FILE)
-    similar_files = find_most_similar(question_embedding, embeddings)
-    
-    logging.debug("유사도로 선택된 파일:")
-    for filename, similarity in similar_files:
-        logging.debug(f"{filename}: {similarity}")
-    
-    relevant_docs = []
-    total_tokens = 0
-    max_tokens = 100000 
-
-    for filename, similarity in similar_files:
-        content = embeddings[filename]['content']            
-        doc_tokens = count_tokens(content)
+    if request.method == 'POST':
+        question = request.form['question']
         
-        if total_tokens + doc_tokens > max_tokens:
-            break
+        logging.debug("질문 임베딩 생성 시작")
+        try:
+            question_embedding = get_embedding(question)
+            logging.debug("질문 임베딩 생성 완료")
+        except Exception as e:
+            logging.error(f"임베딩 생성 중 오류 발생: {str(e)}", exc_info=True)
+            flash(f"임베딩 생성 중 오류 발생: {str(e)}", "error")
+            return redirect(url_for('index'))
         
-        relevant_docs.append({
-            "filename": filename,
-            "similarity": similarity,
-            "content": content
-        })
-        total_tokens += doc_tokens
+        logging.debug("유사한 문서 찾기 시작")
+        embeddings = load_embeddings(EMBEDDINGS_FILE)
+        similar_files = find_most_similar(question_embedding, embeddings)
+        
+        logging.debug("유사도로 선택된 파일:")
+        for filename, similarity in similar_files:
+            logging.debug(f"{filename}: {similarity}")
+        
+        relevant_docs = []
+        total_tokens = 0
+        max_tokens = 100000 
 
-    logging.debug(f"프롬프트 생성 정보:")
-    logging.debug(f"총 토큰 수: {total_tokens}")
-    logging.debug(f"사용된 파일: {[doc['filename'] for doc in relevant_docs]}")
+        for filename, similarity in similar_files:
+            content = embeddings[filename]['content']            
+            doc_tokens = count_tokens(content)
+            
+            if total_tokens + doc_tokens > max_tokens:
+                break
+            
+            relevant_docs.append({
+                "filename": filename,
+                "similarity": similarity,
+                "content": content
+            })
+            total_tokens += doc_tokens
 
-    user_message = f"""Question: {question}
+        logging.debug(f"프롬프트 생성 정보:")
+        logging.debug(f"총 토큰 수: {total_tokens}")
+        logging.debug(f"사용된 파일: {[doc['filename'] for doc in relevant_docs]}")
+
+        user_message = f"""Question: {question}
 
 Please answer the question based on the provided context. 
 Context:
-        {json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"""
-    
-    try:
-        answer = get_chat_response(user_message)
-        logging.debug(f"응답 길이: {len(answer)} 글자")
-    except Exception as e:
-        logging.error(f"API 호출 중 오류 발생: {str(e)}", exc_info=True)
-        flash(f"API 호출 중 오류 발생: {str(e)}", "error")
-        return render_template('index.html')
-    
-    return render_template('result.html', question=question, answer=answer)
+            {json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"""
+        
+        try:
+            answer = get_chat_response(user_message)
+            logging.debug(f"응답 길이: {len(answer)} 글자")
+        except Exception as e:
+            logging.error(f"API 호출 중 오류 발생: {str(e)}", exc_info=True)
+            flash(f"API 호출 중 오류 발생: {str(e)}", "error")
+            return redirect(url_for('index'))
+        
+        doc_id = insert_question(question, answer)
+        return redirect(url_for('show_question', question_id=doc_id))
+
+    questions = get_all_questions()
+    return render_template('index.html', questions=questions)
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings_route():

@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; }
-        .container { max-width: 800px; }
+        .container { max-width: 1200px; }
         .settings-button {
             position: absolute;
             top: 10px;
@@ -16,6 +16,10 @@
         }
         .flash-message {
             transition: opacity 0.5s ease;
+        }
+        .history {
+            max-height: 800px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -40,16 +44,30 @@
             {% endwith %}
         </div>
         
-        <form action="/extract_embeddings" method="POST" class="mb-4">
-            <button type="submit" class="btn btn-secondary">Refresh Embeddings</button>
-        </form>
-        <form method="POST">
-            <div class="mb-3">
-                <label for="question" class="form-label">Your Question:</label>
-                <textarea name="question" id="question" rows="24" class="form-control" required></textarea>
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Question History</h5>
+                <div class="list-group history">
+                    {% for item in questions %}
+                        <!-- item.doc_id를 사용하여 각 질문의 상세 페이지 링크를 생성 -->
+                        <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="list-group-item list-group-item-action">{{ item.title }}</a>
+                    {% endfor %}
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
+            
+            <div class="col-md-8">
+                <form action="/extract_embeddings" method="POST" class="mb-4">
+                    <button type="submit" class="btn btn-secondary">Refresh Embeddings</button>
+                </form>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="question" class="form-label">Your Question:</label>
+                        <textarea name="question" id="question" rows="18" class="form-control" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>

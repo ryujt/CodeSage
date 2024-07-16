@@ -6,3 +6,4 @@ nltk==3.8.1
 tiktoken==0.5.1
 chardet==5.2.0
 PyPDF2==3.0.1
+tinydb==4.8.0
