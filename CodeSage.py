@@ -3,22 +3,16 @@ import json
 import logging
 import shutil
 import nltk
+from datetime import datetime 
 from flask import Flask, render_template, request, redirect, url_for, flash
 from SageLibs.config import EMBEDDINGS_FILE
 from SageLibs.config import load_settings, get_settings, update_settings
-from SageLibs import get_embedding, get_chat_response, load_embeddings, find_most_similar, get_file_paths, read_file, hash_content, count_tokens
+from SageLibs.web_requests import get_embedding, get_chat_response
+from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
 from SageLibs.questions import get_all_questions, get_question_by_id, insert_question
 
 app = Flask(__name__, template_folder='SageTemplate')
 app.secret_key = 'your_secret_key_here'
-
-@app.route('/question/<int:question_id>')
-def show_question(question_id):
-    question_record = get_question_by_id(question_id)
-    if not question_record:
-        return redirect(url_for('index'))
-    
-    return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions())
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -34,41 +28,10 @@ def index():
             flash(f"임베딩 생성 중 오류 발생: {str(e)}", "error")
             return redirect(url_for('index'))
         
-        logging.debug("유사한 문서 찾기 시작")
-        embeddings = load_embeddings(EMBEDDINGS_FILE)
-        similar_files = find_most_similar(question_embedding, embeddings)
-        
-        logging.debug("유사도로 선택된 파일:")
-        for filename, similarity in similar_files:
-            logging.debug(f"{filename}: {similarity}")
-        
-        relevant_docs = []
-        total_tokens = 0
-        max_tokens = 100000 
+        question_part_token_count = count_tokens(question)
+        relevant_docs = get_relevant_documents(question_part_token_count, question_embedding)
 
-        for filename, similarity in similar_files:
-            content = embeddings[filename]['content']            
-            doc_tokens = count_tokens(content)
-            
-            if total_tokens + doc_tokens > max_tokens:
-                break
-            
-            relevant_docs.append({
-                "filename": filename,
-                "similarity": similarity,
-                "content": content
-            })
-            total_tokens += doc_tokens
-
-        logging.debug(f"프롬프트 생성 정보:")
-        logging.debug(f"총 토큰 수: {total_tokens}")
-        logging.debug(f"사용된 파일: {[doc['filename'] for doc in relevant_docs]}")
-
-        user_message = f"""Question: {question}
-
-Please answer the question based on the provided context. 
-Context:
-            {json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"""
+        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nContext:\n{json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"
         
         try:
             answer = get_chat_response(user_message)
@@ -84,41 +47,63 @@ Context:
     questions = get_all_questions()
     return render_template('index.html', questions=questions)
 
-@app.route('/settings', methods=['GET', 'POST'])
-def settings_route():
-    if request.method == 'POST':
-        logging.debug("설정 업데이트 시작")
-        new_settings = {
-            'openai_api_key': request.form.get('apiKey', 'your_openai_api_key'),
-            'extensions': request.form.get('extensions'),
-            'ignore_folders': request.form.get('ignoreFolders'),
-            'ignore_files': request.form.get('ignoreFiles'),
-            'essential_files': request.form.get('essentialFiles')
-        }
-        
-        logging.debug(f"새로운 설정: {new_settings}")
-        update_settings(new_settings)
-        flash('설정이 성공적으로 업데이트되었습니다.', 'success')
-        return redirect(url_for('settings_route'))
+@app.route('/analyze_changes/<analysis_type>', methods=['POST'])
+def analyze_changes(analysis_type):
+    extract_embeddings()
+
+    question = "Please reply in Korean.\n\nPlease analyze the changes described in 'Diff:', and refer to the existing code in 'Context:' to identify issues and suggest improvements."
+
+    try:
+        file_names = get_changed_files_in_diff(analysis_type)
+        combined_answer = ""
+        error_files = []
+
+        for file_name in file_names:
+            try:
+                logging.debug(f"Processing changes for file: {file_name}")
+                diff_output = diff_between_branches(analysis_type, specific_file=file_name)
+                question_embedding = get_embedding(f"{question}\n\nFilename:{file_name}")
+
+                question_part_token_count = count_tokens(f"{question}\n\nDiff:\n{diff_output}")
+                relevant_docs = get_relevant_documents(question_part_token_count, question_embedding)
+
+                user_message = f"Question: {question}\n\nFilename: {file_name}\n\nDiff:\n{diff_output}\n\nContext:\n{json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"
+                answer = get_chat_response(user_message)
+                combined_answer += f"# File: {file_name}\n\n{answer}\n\n"
+
+            except Exception as e:
+                logging.error(f"Error processing file {file_name}: {str(e)}", exc_info=True)
+                error_files.append(file_name)
+
+        if combined_answer:
+            current_time = datetime.now()
+            doc_id = insert_question(f'Git diff result ({analysis_type}) - {current_time}', combined_answer)
+            return redirect(url_for('show_question', question_id=doc_id))
+
+        if error_files:
+            flash(f"Errors encountered in files: {', '.join(error_files)}", "warning")
+        else:
+            flash("No changes to analyze or error in processing all files.", "warning")
+        return redirect(url_for('index'))
+
+    except Exception as e:
+        logging.error(f"General error during analysis: {str(e)}", exc_info=True)
+        flash(f"General error during analysis: {str(e)}", "error")
+        return redirect(url_for('index'))
+
+@app.route('/question/<int:question_id>')
+def show_question(question_id):
+    question_record = get_question_by_id(question_id)
+    if not question_record:
+        return redirect(url_for('index'))
     
-    settings = get_settings()
-    logging.debug(f"현재 설정: {settings}")
-    return render_template('settings.html', 
-                           extensions=", ".join(settings['extensions']),
-                           ignore_folders=", ".join(settings['ignore_folders']),
-                           ignore_files=", ".join(settings['ignore_files']),
-                           essential_files=", ".join(settings['essential_files']),
-                           openai_api_key=settings['openai_api_key'])
+    return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions())
 
 @app.route('/extract_embeddings', methods=['POST'])
 def extract_embeddings():
     logging.info("임베딩 추출 시작")
 
-    backup_file = EMBEDDINGS_FILE + ".bak"
-    if os.path.exists(EMBEDDINGS_FILE):
-        shutil.copy2(EMBEDDINGS_FILE, backup_file)
-
-    existing_embeddings = load_embeddings(backup_file)
+    existing_embeddings = load_embeddings(EMBEDDINGS_FILE)
     file_paths = get_file_paths('.')
     error_files = []
 
@@ -156,6 +141,32 @@ def extract_embeddings():
     else:
         flash("임베딩 추출이 성공적으로 완료되었습니다.", "success")
     return redirect(url_for('index'))
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings_route():
+    if request.method == 'POST':
+        logging.debug("설정 업데이트 시작")
+        new_settings = {
+            'openai_api_key': request.form.get('apiKey', 'your_openai_api_key'),
+            'extensions': request.form.get('extensions'),
+            'ignore_folders': request.form.get('ignoreFolders'),
+            'ignore_files': request.form.get('ignoreFiles'),
+            'essential_files': request.form.get('essentialFiles')
+        }
+        
+        logging.debug(f"새로운 설정: {new_settings}")
+        update_settings(new_settings)
+        flash('설정이 성공적으로 업데이트되었습니다.', 'success')
+        return redirect(url_for('settings_route'))
+    
+    settings = get_settings()
+    logging.debug(f"현재 설정: {settings}")
+    return render_template('settings.html', 
+                           extensions=", ".join(settings['extensions']),
+                           ignore_folders=", ".join(settings['ignore_folders']),
+                           ignore_files=", ".join(settings['ignore_files']),
+                           essential_files=", ".join(settings['essential_files']),
+                           openai_api_key=settings['openai_api_key'])
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
