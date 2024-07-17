@@ -45,7 +45,7 @@ def index():
         doc_id = insert_question(question, answer)
         return redirect(url_for('show_question', question_id=doc_id))
 
-    questions = get_all_questions(True)
+    questions = get_all_questions(revert=True)
     return render_template('index.html', questions=questions)
 
 @app.route('/analyze_changes/<analysis_type>', methods=['POST'])
@@ -98,7 +98,7 @@ def show_question(question_id):
     if not question_record:
         return redirect(url_for('index'))
     
-    return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions(True))
+    return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions(revert=True))
 
 @app.route('/extract_embeddings', methods=['POST'])
 def extract_embeddings():
