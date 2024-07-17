@@ -5,6 +5,7 @@ import shutil
 import nltk
 from datetime import datetime 
 from flask import Flask, render_template, request, redirect, url_for, flash
+from sklearn import tree
 from SageLibs.config import EMBEDDINGS_FILE
 from SageLibs.config import load_settings, get_settings, update_settings
 from SageLibs.web_requests import get_embedding, get_chat_response
@@ -44,7 +45,7 @@ def index():
         doc_id = insert_question(question, answer)
         return redirect(url_for('show_question', question_id=doc_id))
 
-    questions = get_all_questions()
+    questions = get_all_questions(True)
     return render_template('index.html', questions=questions)
 
 @app.route('/analyze_changes/<analysis_type>', methods=['POST'])
@@ -97,7 +98,7 @@ def show_question(question_id):
     if not question_record:
         return redirect(url_for('index'))
     
-    return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions())
+    return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions(True))
 
 @app.route('/extract_embeddings', methods=['POST'])
 def extract_embeddings():

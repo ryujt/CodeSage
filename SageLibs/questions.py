@@ -5,8 +5,11 @@ import re
 db = TinyDB('question_history.json')
 MAX_HISTORY_COUNT = 100 
 
-def get_all_questions():
-    return db.all()
+def get_all_questions(revert=False):
+    questions = db.all()
+    if revert:
+        questions.reverse()
+    return questions
 
 def get_question_by_id(question_id):
     question_record = db.get(doc_id=question_id)
