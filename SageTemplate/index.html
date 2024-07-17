@@ -21,6 +21,10 @@
             max-height: 800px;
             overflow-y: auto;
         }
+        .btn-container {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -49,16 +53,26 @@
                 <h5>Question History</h5>
                 <div class="list-group history">
                     {% for item in questions %}
-                        <!-- item.doc_id를 사용하여 각 질문의 상세 페이지 링크를 생성 -->
                         <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="list-group-item list-group-item-action">{{ item.title }}</a>
                     {% endfor %}
                 </div>
             </div>
             
             <div class="col-md-8">
-                <form action="/extract_embeddings" method="POST" class="mb-4">
-                    <button type="submit" class="btn btn-secondary">Refresh Embeddings</button>
-                </form>
+                <div class="btn-container">
+                    <!-- Extract Embeddings 버튼 -->
+                    <form action="/extract_embeddings" method="POST">
+                        <button type="submit" class="btn btn-secondary">Refresh Embeddings</button>
+                    </form>
+                    <!-- Analyze Main Changes 버튼 -->
+                    <form action="/analyze_changes/main" method="POST">
+                        <button type="submit" class="btn btn-primary">Analyze from main branch</button>
+                    </form>
+                    <!-- Analyze Recent Commit 버튼 -->
+                    <form action="/analyze_changes/recent" method="POST">
+                        <button type="submit" class="btn btn-info">Analyze Recent Commit</button>
+                    </form>
+                </div>                
                 <form method="POST">
                     <div class="mb-3">
                         <label for="question" class="form-label">Your Question:</label>

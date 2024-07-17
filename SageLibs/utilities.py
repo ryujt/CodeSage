@@ -5,8 +5,9 @@ import chardet
 import PyPDF2
 import logging
 import tiktoken
+import subprocess
 from sklearn.metrics.pairwise import cosine_similarity
-from .config import settings, TOKEN_COUNTER_MODEL
+from .config import settings, TOKEN_COUNTER_MODEL, EMBEDDINGS_FILE
 
 def load_embeddings(file_path):
     embeddings = {}
@@ -87,3 +88,87 @@ def hash_content(content):
 def count_tokens(text):
     encoding = tiktoken.encoding_for_model(TOKEN_COUNTER_MODEL)
     return len(encoding.encode(text))
+
+def get_relevant_documents(question_part_token_count, question_embedding, max_tokens=100000):
+    logging.debug("유사한 문서 찾기 시작")
+    embeddings = load_embeddings(EMBEDDINGS_FILE)
+    similar_files = find_most_similar(question_embedding, embeddings)
+    
+    logging.debug("유사도로 선택된 파일:")
+    for filename, similarity in similar_files:
+        logging.debug(f"{filename}: {similarity}")
+    
+    relevant_docs = []
+    total_tokens = question_part_token_count
+
+    for filename, similarity in similar_files:
+        content = embeddings[filename]['content']
+        doc_tokens = count_tokens(content)
+        
+        if total_tokens + doc_tokens > max_tokens:
+            break
+        
+        relevant_docs.append({
+            "filename": filename,
+            "similarity": similarity,
+            "content": content
+        })
+        total_tokens += doc_tokens
+
+    logging.debug(f"프롬프트 생성 정보:")
+    logging.debug(f"총 토큰 수: {total_tokens}")
+    logging.debug(f"사용된 파일: {[doc['filename'] for doc in relevant_docs]}")
+
+    return relevant_docs
+
+def get_git_branches():
+    try:
+        branches = subprocess.check_output(['git', 'branch', '--list'], encoding='utf-8')
+        return branches.split()
+    except subprocess.CalledProcessError as e:
+        raise Exception("Git 명령을 실행하는데 실패했습니다.") from e
+    
+def get_changed_files_in_diff(analysis_type):
+    branches = get_git_branches()
+    base_branch = 'main' if 'main' in branches else 'master' if 'master' in branches else None
+    if not base_branch:
+        raise Exception("필요한 브랜치(main 또는 master)가 존재하지 않습니다.")
+
+    command = []
+    if analysis_type == 'main':
+        command = ['git', 'diff', f'{base_branch}..HEAD', '--name-only']
+    elif analysis_type == 'recent':
+        command = ['git', 'diff', 'HEAD~1..HEAD', '--name-only']
+    else:
+        raise Exception("분석 유형이 잘못 지정되었습니다.")
+
+    try:
+        all_changed_files = subprocess.check_output(command, encoding='utf-8').strip().split('\n')
+        
+        # Filter the changed files based on settings
+        filtered_changed_files = []
+        for file in all_changed_files:
+            if file in settings['ignore_files']:
+                continue
+            if any(ignore_folder in file for ignore_folder in settings['ignore_folders']):
+                continue
+            if not any(file.endswith(ext) for ext in settings['extensions']):
+                continue
+            filtered_changed_files.append(file)
+        
+        return filtered_changed_files
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"{analysis_type}에 해당하는 diff 계산 실패.") from e
+   
+def diff_between_branches(analysis_type, specific_file=None):
+    branches = get_git_branches()
+    base_branch = 'main' if 'main' in branches else 'master' if 'master' in branches else None
+    
+    if not base_branch:
+        raise Exception("Required branch (main or master) is missing.")
+
+    command = ['git', 'diff', f'{base_branch}..HEAD', '--', specific_file] if specific_file else ['git', 'diff', f'{base_branch}..HEAD']
+    try:
+        return subprocess.check_output(command, encoding='utf-8')
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"Failed to calculate diff for {analysis_type}.") from e    
