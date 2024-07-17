@@ -26,18 +26,22 @@ def get_embedding(text):
             raise ValueError(f"Unexpected API response structure: {result}")
         return result['data'][0]['embedding']
     except RequestException as e:
+        error_message = "API 요청 실패"
         if hasattr(e, 'response') and e.response is not None:
-            if e.response.status_code == 401:
-                logging.error("API 키 인증 실패. API 키를 확인하세요.")
-                raise ValueError("API 키 인증 실패") from e
+            status_code = e.response.status_code
+            server_message = e.response.text
+            if status_code == 401:
+                error_message = "API 키 인증 실패. API 키를 확인하세요."
             else:
-                logging.error(f"API 요청 실패: 상태 코드 {e.response.status_code}")
+                error_message = f"API 요청 실패 (상태 코드: {status_code})"
+            logging.error(f"{error_message}\n서버 응답: {server_message}")
         else:
-            logging.error(f"API 요청 실패: {str(e)}")
-        raise
+            logging.error(f"{error_message}: {str(e)}")
+        raise ValueError(error_message) from e
     except (KeyError, IndexError, ValueError) as e:
-        logging.error(f"API 응답 처리 오류: {str(e)}")
-        raise
+        error_message = f"API 응답 처리 오류: {str(e)}"
+        logging.error(error_message)
+        raise ValueError(error_message) from e
 
 def get_chat_response(user_message):    
     settings = get_settings()
