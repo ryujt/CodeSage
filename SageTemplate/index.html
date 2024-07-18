@@ -25,6 +25,11 @@
             display: flex;
             gap: 10px;
         }
+        .delete-button {
+            cursor: pointer;
+            color: #dc3545;
+            margin-left: 4px;
+        }
     </style>
 </head>
 <body>
@@ -53,7 +58,10 @@
                 <h5>Question History</h5>
                 <div class="list-group history">
                     {% for item in questions %}
-                        <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="list-group-item list-group-item-action">{{ item.title }}</a>
+                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="flex-grow-1">{{ item.title }}</a>
+                            <i class="bi bi-trash delete-button" data-question-id="{{ item.doc_id }}"></i>
+                        </div>
                     {% endfor %}
                 </div>
             </div>
@@ -100,6 +108,29 @@
 
         // 페이지 로드 시 함수 실행
         window.addEventListener('load', autoRemoveFlashMessages);
+
+        // 질문 삭제 기능
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('.delete-button');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const questionId = this.getAttribute('data-question-id');
+                    if (confirm('Are you sure you want to delete this question?')) {
+                        fetch(`/delete_question/${questionId}`, { method: 'POST' })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.closest('.list-group-item').remove();
+                                } else {
+                                    alert('Failed to delete question');
+                                }
+                            })
+                            .catch(error => console.error('Error:', error));
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

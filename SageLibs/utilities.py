@@ -18,7 +18,7 @@ def load_embeddings(file_path):
                 embeddings[data['filename']] = data
     return embeddings
 
-def find_most_similar(query_embedding, embeddings, similarity_threshold=0.25, top_k=100):
+def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top_k=100):
     similarities = {}
     for filename, data in embeddings.items():
         if not any(filename.endswith(ext) for ext in settings['extensions']):

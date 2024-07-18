@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Answer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <style>
@@ -57,6 +58,23 @@
             position: relative;
             overflow-x: auto;
         }
+
+        .delete-button {
+            cursor: pointer;
+            color: #dc3545;
+            margin-left: 4px;
+        }
+
+        .question-card {
+            position: relative;
+        }
+
+        .copy-question-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+        }
     </style>
 </head>
 
@@ -71,15 +89,19 @@
                 <h5>Question History</h5>
                 <div class="list-group history">
                     {% for item in questions %}
-                        <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="list-group-item list-group-item-action">{{ item.title }}</a>
+                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="flex-grow-1">{{ item.title }}</a>
+                            <i class="bi bi-trash delete-button" data-question-id="{{ item.doc_id }}"></i>
+                        </div>
                     {% endfor %}
                 </div>
             </div>
             <!-- Main Content Column -->
             <div class="col-md-8">
-                <div class="card mb-4">
+                <div class="card mb-4 question-card">
                     <div class="card-header">
                         <h5 class="card-title">Question</h5>
+                        <button class="btn btn-sm btn-secondary copy-question-btn">Copy Question</button>
                     </div>
                     <div class="card-body">
                         <pre class="card-text">{{ question }}</pre>
@@ -176,6 +198,43 @@
             } else {
                 window.addEventListener('load', renderMermaid);
             }
+
+            // 질문 삭제 기능
+            const deleteButtons = document.querySelectorAll('.delete-button');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const questionId = this.getAttribute('data-question-id');
+                    if (confirm('Are you sure you want to delete this question?')) {
+                        fetch(`/delete_question/${questionId}`, { method: 'POST' })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.closest('.list-group-item').remove();
+                                } else {
+                                    alert('Failed to delete question');
+                                }
+                            })
+                            .catch(error => console.error('Error:', error));
+                    }
+                });
+            });
+
+            // 질문 복사 기능
+            const copyQuestionBtn = document.querySelector('.copy-question-btn');
+            const questionText = document.querySelector('.question-card pre').textContent;
+            
+            copyQuestionBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(questionText).then(() => {
+                    const originalText = this.textContent;
+                    this.textContent = 'Copied!';
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            });
         });
     </script>
 </body>

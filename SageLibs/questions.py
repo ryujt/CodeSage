@@ -24,6 +24,13 @@ def insert_question(question, answer):
     maintain_history_limit()
     return doc_id
 
+def delete_question(question_id):
+    question = db.get(doc_id=question_id)
+    if question:
+        db.remove(doc_ids=[question_id])
+        return True
+    return False
+
 def extract_first_sentence(text):
     first_sentence = re.split(r'\.|\?|\n', text)[0].strip()
     return first_sentence if first_sentence else text

@@ -4,13 +4,12 @@ import logging
 import shutil
 import nltk
 from datetime import datetime 
-from flask import Flask, render_template, request, redirect, url_for, flash
-from sklearn import tree
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from SageLibs.config import EMBEDDINGS_FILE
 from SageLibs.config import load_settings, get_settings, update_settings
 from SageLibs.web_requests import get_embedding, get_chat_response
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
-from SageLibs.questions import get_all_questions, get_question_by_id, insert_question
+from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question
 
 app = Flask(__name__, template_folder='SageTemplate')
 app.secret_key = 'your_secret_key_here'
@@ -99,6 +98,18 @@ def show_question(question_id):
         return redirect(url_for('index'))
     
     return render_template('result.html', question=question_record['question'], answer=question_record['answer'], questions=get_all_questions(revert=True))
+
+@app.route('/delete_question/<int:question_id>', methods=['POST'])
+def delete_question_route(question_id):
+    try:
+        success = delete_question(question_id)
+        if success:
+            return jsonify({"success": True, "message": "질문이 성공적으로 삭제되었습니다."})
+        else:
+            return jsonify({"success": False, "message": "질문을 찾을 수 없습니다."}), 404
+    except Exception as e:
+        logging.error(f"질문 삭제 중 오류 발생 (ID: {question_id}): {str(e)}", exc_info=True)
+        return jsonify({"success": False, "message": f"질문 삭제 중 오류 발생: {str(e)}"}), 500
 
 @app.route('/extract_embeddings', methods=['POST'])
 def extract_embeddings():
