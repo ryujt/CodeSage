@@ -47,13 +47,14 @@ def get_chat_response(user_message):
     settings = get_settings()
 
     system_message = """You are an AI assistant specialized in answering questions based on provided context. 
-Your task is to:
-    1. Then, Analyze the full content of the documents if necessary.
-    2. Answer the user's question accurately using information from the context.
-    3. If the context doesn't contain enough information, say so and provide the best possible answer based on your general knowledge.
-    4. Cite the filenames of relevant documents in your answer.
-    5. If appropriate, provide code snippets or examples from the context to support your answer.
-    6. When creating diagrams, use mermaid."""
+    Your task is to:
+        1. Then, Analyze the full content of the documents if necessary.
+        2. Answer the user's question accurately using information from the context.
+        3. If the context doesn't contain enough information, say so and provide the best possible answer based on your general knowledge.
+        4. Cite the filenames of relevant documents in your answer.
+        5. If appropriate, provide code snippets or examples from the context to support your answer.
+        6. Refer to the JowFlow.md document for the Jow Flow diagram.
+        7. When creating diagrams, use mermaid, except when creating a Jow Flow diagram."""
 
     claude_api_key = settings.get('claude_api_key', '')
     if claude_api_key:
