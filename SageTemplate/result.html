@@ -9,27 +9,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <style>
-        body {
+        body { 
+            background-color: #f8f9fa; 
+            overflow-x: hidden;
+        }
+        .wrapper {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+        }
+        #sidebar {
+            width: 250px;
+            min-height: 100vh;
             background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
         }
-
-        .container {
-            max-width: 1200px;
+        #content {
+            flex: 1;
+            padding: 20px;
+            min-height: 100vh;
         }
-
         pre {
             background-color: #f1f3f5;
             padding: 15px;
             border-radius: 5px;
             position: relative;
             overflow-x: auto;
-            white-space: pre;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
-
-        .answer {
-            overflow-wrap: break-word;
-        }
-
+        .answer { overflow-wrap: break-word; }
         .copy-btn {
             position: absolute;
             top: 5px;
@@ -37,38 +46,37 @@
             padding: 5px 10px;
             font-size: 12px;
         }
-
-        .mermaid {
+        .mermaid, .jobflow-diagram {
             background-color: white;
             padding: 10px;
             margin-bottom: 10px;
             overflow-x: auto;
         }
-
+        .jobflow-diagram {
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+        }
+        .jobflow-diagram svg {
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+        }
         .history {
             max-height: 800px;
             overflow-y: auto;
         }
-
-        .header-title {
-            cursor: pointer;
-        }
-
+        .header-title { cursor: pointer; }
         .code-container {
             position: relative;
             overflow-x: auto;
         }
-
         .delete-button {
             cursor: pointer;
             color: #dc3545;
             margin-left: 4px;
         }
-
-        .question-card {
-            position: relative;
-        }
-
+        .question-card { position: relative; }
         .copy-question-btn {
             position: absolute;
             top: 10px;
@@ -79,14 +87,11 @@
 </head>
 
 <body>
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-12 mb-4">
-                <h1 class="header-title" onclick="window.location='/'">Code Sage</h1>
-            </div>
-            <!-- Question History Column -->
-            <div class="col-md-4">
-                <h5>Question History</h5>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="position-sticky pt-3">
+                <h5 class="p-3">Question History</h5>
                 <div class="list-group history">
                     {% for item in questions %}
                         <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
@@ -96,40 +101,62 @@
                     {% endfor %}
                 </div>
             </div>
-            <!-- Main Content Column -->
-            <div class="col-md-8">
-                <div class="card mb-4 question-card">
-                    <div class="card-header">
-                        <h5 class="card-title">Question</h5>
-                        <button class="btn btn-sm btn-secondary copy-question-btn">Copy Question</button>
-                    </div>
-                    <div class="card-body">
-                        <pre class="card-text">{{ question }}</pre>
-                    </div>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+                <div class="container-fluid">
+                    <h1 class="header-title" onclick="window.location='/'">Code Sage</h1>
                 </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title">Answer</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="answer" id="answer-content">{{ answer | e }}</div>
-                    </div>
+            </nav>
+
+            <div class="card mb-4 question-card">
+                <div class="card-header">
+                    <h5 class="card-title">Question</h5>
+                    <button class="btn btn-sm btn-secondary copy-question-btn">Copy Question</button>
                 </div>
-                <a href="/" class="btn btn-primary mt-3">Ask Another Question</a>
+                <div class="card-body">
+                    <pre class="card-text">{{ question }}</pre>
+                </div>
             </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Answer</h5>
+                </div>
+                <div class="card-body">
+                    <div class="answer" id="answer-content">{{ answer | e }}</div>
+                </div>
+            </div>
+            <a href="/" class="btn btn-primary mt-3">Ask Another Question</a>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://job-flow.s3.ap-northeast-2.amazonaws.com/jobflow.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const answerElement = document.getElementById('answer-content');
             const markdownContent = answerElement.textContent;
-            const htmlContent = marked.parse(markdownContent);
+
+            const renderer = new marked.Renderer();
+            const originalCodeRenderer = renderer.code.bind(renderer);
+            
+            renderer.code = function(code, language) {
+                if (language === 'jobflow') {
+                    const svg = JobFlowToSVG.generateSVG(code);
+                    const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
+                    const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}">`);
+                    return `<div class="jobflow-diagram">${modifiedSvg}</div>`;
+                }
+                return originalCodeRenderer(code, language);
+            };
+            
+            const htmlContent = marked.parse(markdownContent, { renderer: renderer });
             answerElement.innerHTML = htmlContent;
 
-            // 복사 버튼 생성 함수
             function createCopyButton(text) {
                 const button = document.createElement('button');
                 button.textContent = 'Copy';
@@ -145,61 +172,63 @@
                 return button;
             }
 
-            // 일반 코드 블록에 복사 버튼 추가
-            document.querySelectorAll('pre code:not(.language-mermaid)').forEach((block) => {
-                hljs.highlightBlock(block);
-                const button = createCopyButton(block.textContent);
-                block.parentNode.insertBefore(button, block);
-            });
+            function processCodeBlock(block) {
+                if (block.classList.contains('language-mermaid')) {
+                    processMermaidDiagram(block);
+                } else if (block.classList.contains('language-jobflow')) {
+                    processJobFlowDiagram(block);
+                } else {
+                    hljs.highlightElement(block);
+                    const button = createCopyButton(block.textContent);
+                    block.parentNode.insertBefore(button, block);
+                }
+            }
 
-            // Mermaid 다이어그램 렌더링
+            function processMermaidDiagram(el) {
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.classList.add('mermaid');
+                mermaidDiv.textContent = el.textContent;
+
+                const copyButton = createCopyButton(el.textContent);
+                const containerDiv = document.createElement('div');
+                containerDiv.style.position = 'relative';
+                copyButton.style.position = 'absolute';
+                copyButton.style.top = '5px';
+                copyButton.style.right = '5px';
+
+                containerDiv.appendChild(mermaidDiv);
+                containerDiv.appendChild(copyButton);
+                el.parentNode.replaceChild(containerDiv, el);
+            }
+
+            function processJobFlowDiagram(el) {
+                const jobFlowDiv = document.createElement('div');
+                jobFlowDiv.classList.add('jobflow-diagram');
+                const svg = JobFlowToSVG.generateSVG(el.textContent);
+                const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
+                const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}">`);
+                jobFlowDiv.innerHTML = modifiedSvg;
+
+                const copyButton = createCopyButton(el.textContent);
+                copyButton.style.position = 'absolute';
+                copyButton.style.top = '5px';
+                copyButton.style.right = '5px';
+
+                const containerDiv = document.createElement('div');
+                containerDiv.style.position = 'relative';
+                containerDiv.appendChild(jobFlowDiv);
+                containerDiv.appendChild(copyButton);
+                el.parentNode.replaceChild(containerDiv, el);
+            }
+
+            document.querySelectorAll('pre code').forEach(processCodeBlock);
+
             mermaid.initialize({
-                startOnLoad: false,
+                startOnLoad: true,
                 securityLevel: 'loose',
                 theme: 'default'
             });
 
-            const mermaidCallback = function (id) {
-                console.log("Mermaid rendering completed for id:", id);
-            };
-
-            const renderMermaid = function () {
-                document.querySelectorAll('code.language-mermaid').forEach((el, index) => {
-                    const mermaidDiv = document.createElement('div');
-                    mermaidDiv.classList.add('mermaid');
-                    mermaidDiv.id = `mermaid-${index}`;
-                    mermaidDiv.textContent = el.textContent;
-
-                    // 복사 버튼 생성 및 추가
-                    const copyButton = createCopyButton(el.textContent);
-
-                    // 컨테이너 div 생성
-                    const containerDiv = document.createElement('div');
-                    containerDiv.style.position = 'relative';
-
-                    // 복사 버튼을 컨테이너의 우상단에 위치시킴
-                    copyButton.style.position = 'absolute';
-                    copyButton.style.top = '5px';
-                    copyButton.style.right = '5px';
-
-                    // 요소들을 조립
-                    containerDiv.appendChild(mermaidDiv);
-                    containerDiv.appendChild(copyButton);
-
-                    // 원래의 코드 블록을 새로운 구조로 교체
-                    el.parentNode.replaceChild(containerDiv, el);
-                });
-
-                mermaid.init(undefined, '.mermaid', mermaidCallback);
-            };
-
-            if (document.readyState === 'complete') {
-                renderMermaid();
-            } else {
-                window.addEventListener('load', renderMermaid);
-            }
-
-            // 질문 삭제 기능
             const deleteButtons = document.querySelectorAll('.delete-button');
             deleteButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
@@ -220,7 +249,6 @@
                 });
             });
 
-            // 질문 복사 기능
             const copyQuestionBtn = document.querySelector('.copy-question-btn');
             const questionText = document.querySelector('.question-card pre').textContent;
             
