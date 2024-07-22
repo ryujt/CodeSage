@@ -19,8 +19,13 @@ def load_embeddings(file_path):
     return embeddings
 
 def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top_k=100):
+    essential_files = {filename: 10 for filename in settings['essential_files']}
+
     similarities = {}
     for filename, data in embeddings.items():
+        if filename in essential_files:
+            continue
+        
         if not any(filename.endswith(ext) for ext in settings['extensions']):
             continue
         if filename in settings['ignore_files']:
@@ -29,19 +34,14 @@ def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top
             continue
         
         similarity = cosine_similarity([query_embedding], [data['embedding']])[0][0]
-        if similarity >= similarity_threshold or filename in settings['essential_files']:
+        if similarity >= similarity_threshold:
             similarities[filename] = similarity
-
-    for filename in settings['essential_files']:
-        if filename in embeddings and filename not in similarities:
-            similarities[filename] = 10
 
     sorted_files = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
     
-    essential_files = [(f, s) for f, s in sorted_files if f in settings['essential_files']]
-    other_files = [(f, s) for f, s in sorted_files if f not in settings['essential_files']]
+    result = list(essential_files.items()) + sorted_files[:top_k - len(essential_files)]
     
-    return essential_files + other_files[:top_k - len(essential_files)]
+    return result[:top_k]
 
 def get_file_paths(folder_path):
     file_paths = []
@@ -102,8 +102,10 @@ def get_relevant_documents(question_part_token_count, question_embedding, max_to
     total_tokens = question_part_token_count
 
     for filename, similarity in similar_files:
-        if filename in settings['essential_files']:
-            continue  # 이미 추가된 essential 파일은 건너뛰기
+        if filename not in embeddings:
+            logging.warning(f"File {filename} not found in embeddings. Skipping.")
+            continue
+
         content = embeddings[filename]['content']
         doc_tokens = count_tokens(content)
         
