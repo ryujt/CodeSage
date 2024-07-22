@@ -66,8 +66,10 @@ def maintain_history_limit():
             db.remove(doc_ids=[min_id])
             all_questions = db.all()  # 재조회 필요
 
-def get_relevant_answers(question_embedding, similarity_threshold=SIMILARITY_THRESHOLD, max_tokens=10000):
+def get_relevant_answers(question_embedding, similarity_threshold=SIMILARITY_THRESHOLD, max_tokens=80000):
     all_questions = db.all()
+    all_questions.reverse()
+
     relevant_questions = []
     total_tokens = 0
 
@@ -92,6 +94,7 @@ def get_relevant_answers(question_embedding, similarity_threshold=SIMILARITY_THR
                 break
 
             relevant_questions.append({
+                "tokens": answer_tokens,
                 "title": question['title'],
                 "similarity": float(similarities[idx]),  # numpy.float32를 Python float으로 변환
                 "answer": question['answer']

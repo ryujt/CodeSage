@@ -89,7 +89,7 @@ def count_tokens(text):
     encoding = tiktoken.encoding_for_model(TOKEN_COUNTER_MODEL)
     return len(encoding.encode(text))
 
-def get_relevant_documents(question_part_token_count, question_embedding, max_tokens=80000):
+def get_relevant_documents(question_embedding, max_tokens=80000):
     logging.debug("유사한 문서 찾기 시작")
     embeddings = load_embeddings(EMBEDDINGS_FILE)
     similar_files = find_most_similar(question_embedding, embeddings)
@@ -99,7 +99,7 @@ def get_relevant_documents(question_part_token_count, question_embedding, max_to
         logging.debug(f"{filename}: {similarity}")
     
     relevant_docs = []
-    total_tokens = question_part_token_count
+    total_tokens = 0
 
     for filename, similarity in similar_files:
         if filename not in embeddings:
@@ -107,12 +107,13 @@ def get_relevant_documents(question_part_token_count, question_embedding, max_to
             continue
 
         content = embeddings[filename]['content']
-        doc_tokens = count_tokens(content)
+        doc_tokens = count_tokens(filename + "\n\n" + content)
         
         if total_tokens + doc_tokens > max_tokens:
             break
         
         relevant_docs.append({
+            "tokens": doc_tokens,
             "filename": filename,
             "similarity": similarity,
             "content": content

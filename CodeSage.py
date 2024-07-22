@@ -29,10 +29,31 @@ def index():
             return redirect(url_for('index'))
         
         question_part_token_count = count_tokens(question)
-        relevant_docs = get_relevant_documents(question_part_token_count, question_embedding)
         relevant_answers = get_relevant_answers(question_embedding)
+        relevant_docs = get_relevant_documents(question_embedding)
         
-        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_answers: \n{json.dumps(relevant_answers, ensure_ascii=False)}\n\nrelevant_docs:\n{json.dumps(relevant_docs, ensure_ascii=False)}"
+        # 토큰 수 제한 및 선택 로직
+        max_tokens = 80000
+        remaining_tokens = max_tokens - question_part_token_count
+        selected_answers = []
+        selected_docs = []
+        
+        # relevant_answers와 relevant_docs를 유사도 순으로 정렬
+        all_items = relevant_answers + relevant_docs
+        all_items.sort(key=lambda x: x['similarity'], reverse=True)
+        
+        for item in all_items:
+            if remaining_tokens - item['tokens'] >= 0:
+                if 'filename' in item:  # relevant_docs의 항목
+                    selected_docs.append(item)
+                else:  # relevant_answers의 항목
+                    selected_answers.append(item)
+                remaining_tokens -= item['tokens']
+            
+            if remaining_tokens <= 0:
+                break
+        
+        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_answers: \n{json.dumps(selected_answers, ensure_ascii=False)}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}"
         
         try:
             answer = get_chat_response(user_message)
