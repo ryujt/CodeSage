@@ -9,7 +9,7 @@ from SageLibs.config import EMBEDDINGS_FILE
 from SageLibs.config import load_settings, get_settings, update_settings
 from SageLibs.web_requests import get_embedding, get_chat_response
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
-from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question
+from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question, get_relevant_answers
 
 app = Flask(__name__, template_folder='SageTemplate')
 app.secret_key = 'your_secret_key_here'
@@ -30,8 +30,9 @@ def index():
         
         question_part_token_count = count_tokens(question)
         relevant_docs = get_relevant_documents(question_part_token_count, question_embedding)
-
-        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nContext:\n{json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"
+        relevant_answers = get_relevant_answers(question_embedding)
+        
+        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_answers: \n{json.dumps(relevant_answers, ensure_ascii=False)}\n\nrelevant_docs:\n{json.dumps(relevant_docs, ensure_ascii=False)}"
         
         try:
             answer = get_chat_response(user_message)

@@ -7,7 +7,7 @@ import logging
 import tiktoken
 import subprocess
 from sklearn.metrics.pairwise import cosine_similarity
-from .config import settings, TOKEN_COUNTER_MODEL, EMBEDDINGS_FILE
+from .config import settings, TOKEN_COUNTER_MODEL, EMBEDDINGS_FILE, SIMILARITY_THRESHOLD
 
 def load_embeddings(file_path):
     embeddings = {}
@@ -18,7 +18,7 @@ def load_embeddings(file_path):
                 embeddings[data['filename']] = data
     return embeddings
 
-def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top_k=100):
+def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARITY_THRESHOLD, top_k=100):
     essential_files = {filename: 10 for filename in settings['essential_files']}
 
     similarities = {}
@@ -89,7 +89,7 @@ def count_tokens(text):
     encoding = tiktoken.encoding_for_model(TOKEN_COUNTER_MODEL)
     return len(encoding.encode(text))
 
-def get_relevant_documents(question_part_token_count, question_embedding, max_tokens=100000):
+def get_relevant_documents(question_part_token_count, question_embedding, max_tokens=80000):
     logging.debug("유사한 문서 찾기 시작")
     embeddings = load_embeddings(EMBEDDINGS_FILE)
     similar_files = find_most_similar(question_embedding, embeddings)

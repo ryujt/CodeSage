@@ -14,6 +14,8 @@ CLAUDE_MODEL = 'claude-3-sonnet-20240229'
 EMBEDDINGS_FILE = 'embeddings.jsonl'
 SETTINGS_FILE = 'SageSettings.json'
 
+SIMILARITY_THRESHOLD = 0.30
+
 settings = {}
 
 def load_settings():

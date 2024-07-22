@@ -1,9 +1,14 @@
 from tinydb import TinyDB, Query
 from flask import flash
 import re
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+from .config import SIMILARITY_THRESHOLD
+from .web_requests import get_embedding
+from .utilities import hash_content, count_tokens
 
 db = TinyDB('question_history.json')
-MAX_HISTORY_COUNT = 100 
+MAX_HISTORY_COUNT = 512 
 
 def get_all_questions(revert=False):
     questions = db.all()
@@ -20,7 +25,22 @@ def get_question_by_id(question_id):
 
 def insert_question(question, answer):
     title = extract_first_sentence(question)
-    doc_id = db.insert({'question': question, 'answer': answer, 'title': title})
+    combined_content = f"{question}\n\n{answer}"
+    content_hash = hash_content(combined_content)
+    
+    try:
+        embedding = get_embedding(combined_content)
+    except Exception as e:
+        flash(f"Error generating embedding: {str(e)}", "error")
+        embedding = None
+
+    doc_id = db.insert({
+        'question': question, 
+        'answer': answer, 
+        'title': title,
+        'content_hash': content_hash,
+        'embedding': embedding
+    })
     maintain_history_limit()
     return doc_id
 
@@ -45,3 +65,38 @@ def maintain_history_limit():
             min_id = min(question.doc_id for question in all_questions)
             db.remove(doc_ids=[min_id])
             all_questions = db.all()  # 재조회 필요
+
+def get_relevant_answers(question_embedding, similarity_threshold=SIMILARITY_THRESHOLD, max_tokens=10000):
+    all_questions = db.all()
+    relevant_questions = []
+    total_tokens = 0
+
+    # 모든 질문의 임베딩을 numpy 배열로 변환
+    all_embeddings = np.array([q['embedding'] for q in all_questions if q['embedding'] is not None])
+    
+    if len(all_embeddings) > 0:
+        # 코사인 유사도 계산
+        similarities = cosine_similarity([question_embedding], all_embeddings)[0]
+
+        # 유사도가 높은 순으로 정렬
+        sorted_indices = np.argsort(similarities)[::-1]
+
+        for idx in sorted_indices:
+            if similarities[idx] < similarity_threshold:
+                break
+
+            question = all_questions[idx]
+            answer_tokens = count_tokens(question['title'] + "\n\n" + question['answer'])
+
+            if total_tokens + answer_tokens > max_tokens:
+                break
+
+            relevant_questions.append({
+                "title": question['title'],
+                "similarity": float(similarities[idx]),  # numpy.float32를 Python float으로 변환
+                "answer": question['answer']
+            })
+
+            total_tokens += answer_tokens
+
+    return relevant_questions
