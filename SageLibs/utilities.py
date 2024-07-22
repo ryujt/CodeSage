@@ -34,7 +34,7 @@ def find_most_similar(query_embedding, embeddings, similarity_threshold=0.3, top
 
     for filename in settings['essential_files']:
         if filename in embeddings and filename not in similarities:
-            similarities[filename] = 0
+            similarities[filename] = 10
 
     sorted_files = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
     
@@ -102,6 +102,8 @@ def get_relevant_documents(question_part_token_count, question_embedding, max_to
     total_tokens = question_part_token_count
 
     for filename, similarity in similar_files:
+        if filename in settings['essential_files']:
+            continue  # 이미 추가된 essential 파일은 건너뛰기
         content = embeddings[filename]['content']
         doc_tokens = count_tokens(content)
         
