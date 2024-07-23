@@ -52,7 +52,7 @@ def delete_question(question_id):
     return False
 
 def extract_first_sentence(text):
-    first_sentence = re.split(r'\.|\?|\n', text)[0].strip()
+    first_sentence = re.split(r'\n', text)[0].strip()
     return first_sentence if first_sentence else text
 
 def maintain_history_limit():
