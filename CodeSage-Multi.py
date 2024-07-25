@@ -68,7 +68,7 @@ def index():
         return redirect(url_for('show_question', question_id=doc_id))
 
     questions = get_all_questions(revert=True)
-    return render_template('index.html', questions=questions)
+    return render_template('index-multi.html', questions=questions)
 
 @app.route('/analyze_changes/<analysis_type>', methods=['POST'])
 def analyze_changes(analysis_type):

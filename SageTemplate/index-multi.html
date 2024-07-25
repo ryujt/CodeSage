@@ -9,11 +9,12 @@
     <style>
         body { background-color: #f8f9fa; }
         .container { max-width: 1200px; }
-        .settings-button {
+        .settings-button, .folders-button {
             position: absolute;
             top: 10px;
-            right: 10px;
         }
+        .settings-button { right: 10px; }
+        .folders-button { right: 60px; }
         .flash-message {
             transition: opacity 0.5s ease;
         }
@@ -36,6 +37,9 @@
     <div class="container mt-5 position-relative">
         <a href="/settings" class="btn btn-outline-secondary settings-button" title="Settings">
             <i class="bi bi-gear"></i>
+        </a>
+        <a href="/select_folders" class="btn btn-outline-secondary folders-button" title="Select Folders">
+            <i class="bi bi-folder"></i>
         </a>
         <h1 class="mb-4">Code Sage</h1>
         
