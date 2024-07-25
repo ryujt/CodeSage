@@ -89,36 +89,48 @@ def count_tokens(text):
     encoding = tiktoken.encoding_for_model(TOKEN_COUNTER_MODEL)
     return len(encoding.encode(text))
 
-def get_relevant_documents(question_embedding, max_tokens=80000):
-    logging.debug("유사한 문서 찾기 시작")
-    embeddings = load_embeddings(EMBEDDINGS_FILE)
-    similar_files = find_most_similar(question_embedding, embeddings)
-    
-    logging.debug("유사도로 선택된 파일:")
-    for filename, similarity in similar_files:
-        logging.debug(f"{filename}: {similarity}")
-    
+def get_relevant_documents(folders, question_embedding, max_tokens=80000):
     relevant_docs = []
     total_tokens = 0
 
-    for filename, similarity in similar_files:
-        if filename not in embeddings:
-            logging.warning(f"File {filename} not found in embeddings. Skipping.")
+    for folder in folders:
+        if not folder.endswith('/') and not folder.endswith('\\'):
+            folder += '/'
+        
+        embedding_file = os.path.join(folder, EMBEDDINGS_FILE)
+        logging.debug(f"임베딩 파일 로드: {embedding_file}")
+        
+        try:
+            embeddings = load_embeddings(embedding_file)
+        except Exception as e:
+            logging.error(f"Error loading embeddings from {embedding_file}: {str(e)}")
             continue
 
-        content = embeddings[filename]['content']
-        doc_tokens = count_tokens(filename + "\n\n" + content)
+        similar_files = find_most_similar(question_embedding, embeddings)
         
-        if total_tokens + doc_tokens > max_tokens:
-            break
+        logging.debug(f"{folder}에서 유사도로 선택된 파일:")
+        for filename, similarity in similar_files:
+            logging.debug(f"{filename}: {similarity}")
         
-        relevant_docs.append({
-            "tokens": doc_tokens,
-            "filename": filename,
-            "similarity": similarity,
-            "content": content
-        })
-        total_tokens += doc_tokens
+        for filename, similarity in similar_files:
+            if filename not in embeddings:
+                logging.warning(f"File {filename} not found in embeddings. Skipping.")
+                continue
+
+            content = embeddings[filename]['content']
+            doc_tokens = count_tokens(filename + "\n\n" + content)
+            
+            if total_tokens + doc_tokens > max_tokens:
+                logging.info("최대 토큰 수 도달, 추가 파일 처리 중지")
+                return relevant_docs
+            
+            relevant_docs.append({
+                "tokens": doc_tokens,
+                "filename": filename,
+                "similarity": similarity,
+                "content": content
+            })
+            total_tokens += doc_tokens
 
     logging.debug(f"프롬프트 생성 정보:")
     logging.debug(f"총 토큰 수: {total_tokens}")

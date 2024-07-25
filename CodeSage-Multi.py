@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import shutil
 import nltk
 from datetime import datetime 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
@@ -31,7 +30,7 @@ def index():
         
         question_part_token_count = count_tokens(question)
         relevant_answers = get_relevant_answers(question_embedding)
-        relevant_docs = get_relevant_documents(question_embedding)
+        relevant_docs = get_relevant_documents(get_selected_folders(), question_embedding)
         
         # 토큰 수 제한 및 선택 로직
         max_tokens = 80000
@@ -138,43 +137,49 @@ def delete_question_route(question_id):
 def extract_embeddings():
     logging.info("임베딩 추출 시작")
 
-    existing_embeddings = load_embeddings(EMBEDDINGS_FILE)
-    file_paths = get_file_paths('.')
-    error_files = []
+    folders = get_selected_folders()
+    logging.info(f"Selected folders: {folders}")
 
-    with open(EMBEDDINGS_FILE, 'w', encoding='utf-8') as f:
-        for file_path in file_paths:
-            try:
-                relative_path = os.path.relpath(file_path)
-                logging.info(f"Processing {relative_path}")
-                
-                content = read_file(file_path)
-                content_hash = hash_content(content)
+    for folder in folders:
+        embedding_file = os.path.join(folder, EMBEDDINGS_FILE)
+        existing_embeddings = load_embeddings(embedding_file)
+        file_paths = get_file_paths(folder)
+        error_files = []
 
-                if relative_path in existing_embeddings and existing_embeddings[relative_path]['content_hash'] == content_hash:
-                    file_data = existing_embeddings[relative_path]
-                else:
-                    logging.info(f"  - Changes detected or new file, generating new embedding")
-                    embedding = get_embedding(content)
-                    file_data = {
-                        "filename": relative_path, 
-                        "content": content,
-                        "content_hash": content_hash,
-                        "embedding": embedding
-                    }
+        with open(embedding_file, 'w', encoding='utf-8') as f:
+            for file_path in file_paths:
+                try:
+                    relative_path = os.path.relpath(file_path, start=folder)
+                    logging.info(f"Processing {relative_path}")
+                    
+                    content = read_file(file_path)
+                    content_hash = hash_content(content)
 
-                f.write(json.dumps(file_data, ensure_ascii=False) + '\n')
-            except Exception as e:
-                logging.error(f"Error processing {file_path}: {str(e)}", exc_info=True)
-                error_files.append(relative_path)
+                    if relative_path in existing_embeddings and existing_embeddings[relative_path]['content_hash'] == content_hash:
+                        file_data = existing_embeddings[relative_path]
+                    else:
+                        logging.info(f"  - Changes detected or new file, generating new embedding")
+                        embedding = get_embedding(content)
+                        file_data = {
+                            "filename": relative_path, 
+                            "content": content,
+                            "content_hash": content_hash,
+                            "embedding": embedding
+                        }
 
-    logging.info(f"Embedding extraction complete. Results saved to {EMBEDDINGS_FILE}")
-    if error_files:
-        error_message = f"The following files encountered errors and were skipped: {', '.join(error_files)}"
-        logging.warning(error_message)
-        flash(error_message, "warning")
-    else:
-        flash("임베딩 추출이 성공적으로 완료되었습니다.", "success")
+                    f.write(json.dumps(file_data, ensure_ascii=False) + '\n')
+                except Exception as e:
+                    logging.error(f"Error processing {file_path}: {str(e)}", exc_info=True)
+                    error_files.append(relative_path)
+
+        logging.info(f"Embedding extraction complete for folder {folder}. Results saved to {embedding_file}")
+        if error_files:
+            error_message = f"The following files encountered errors and were skipped in folder {folder}: {', '.join(error_files)}"
+            logging.warning(error_message)
+            flash(error_message, "warning")
+        else:
+            flash(f"임베딩 추출이 성공적으로 완료되었습니다 for folder {folder}.", "success")
+
     return redirect(url_for('index'))
 
 @app.route('/settings', methods=['GET', 'POST'])
@@ -208,17 +213,6 @@ def select_folders():
     folders = get_all_folders()
     selected_folders = get_selected_folders()
     return render_template('sage_folders.html', folders=folders, selected_folders=selected_folders)
-
-@app.route('/get_folder_path', methods=['POST'])
-def get_folder_path():
-    data = request.json
-    folder_name = data.get('folder_name')
-    if not folder_name:
-        return jsonify({"success": False, "message": "No folder name provided"}), 400
-    
-    full_path = os.path.abspath(os.path.join(os.getcwd(), folder_name))
-    
-    return jsonify({"success": True, "path": full_path})
 
 @app.route('/add_folder', methods=['POST'])
 def add_folder_route():

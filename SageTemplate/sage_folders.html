@@ -62,7 +62,6 @@
         <form id="add-folder-form" class="mb-3">
             <div class="input-group">
                 <input type="text" id="new-folder" class="form-control" placeholder="Enter folder path" required>
-                <button type="button" id="select-folder-btn" class="btn btn-secondary">Select Folder</button>
                 <button type="submit" class="btn btn-primary">Add Folder</button>
             </div>
         </form>
@@ -91,32 +90,7 @@
             const addForm = document.getElementById('add-folder-form');
             const folderList = document.getElementById('folder-list');
             const newFolderInput = document.getElementById('new-folder');
-            const selectFolderBtn = document.getElementById('select-folder-btn');
             const saveSelectionBtn = document.getElementById('save-selection-btn');
-
-            selectFolderBtn.addEventListener('click', async function() {
-                try {
-                    const dirHandle = await window.showDirectoryPicker();
-                    newFolderInput.value = dirHandle.name;  // 폴더 이름만 표시
-                    
-                    // 전체 경로를 얻기 위해 서버에 요청
-                    const response = await fetch('/get_folder_path', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({folder_name: dirHandle.name}),
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        newFolderInput.value = data.path;
-                    } else {
-                        console.error('Failed to get full path:', data.message);
-                    }
-                } catch (err) {
-                    console.error('An error occurred:', err);
-                }
-            });
 
             addForm.addEventListener('submit', function(e) {
                 e.preventDefault();

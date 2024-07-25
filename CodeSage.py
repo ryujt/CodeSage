@@ -30,7 +30,7 @@ def index():
         
         question_part_token_count = count_tokens(question)
         relevant_answers = get_relevant_answers(question_embedding)
-        relevant_docs = get_relevant_documents(question_embedding)
+        relevant_docs = get_relevant_documents(['./'], question_embedding)
         
         # 토큰 수 제한 및 선택 로직
         max_tokens = 80000
