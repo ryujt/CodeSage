@@ -9,7 +9,7 @@ from SageLibs.config import load_settings, get_settings, update_settings
 from SageLibs.web_requests import get_embedding, get_chat_response
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
 from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question, get_relevant_answers
-from SageLibs.folders import get_all_folders, add_folder, delete_folder, get_selected_folders, save_selected_folders
+from SageLibs.folders import get_all_folders, add_folder, delete_folder, get_selected_folders, update_selected_folders
 
 app = Flask(__name__, template_folder='SageTemplate')
 app.secret_key = 'your_secret_key_here'
@@ -246,15 +246,15 @@ def delete_folder_route():
     success, message = delete_folder(folder)
     return jsonify({"success": success, "message": message})
 
-@app.route('/save_selected_folders', methods=['POST'])
-def save_selected_folders_route():
+@app.route('/update_selected_folders', methods=['POST'])
+def update_selected_folders_route():
     data = request.json
     selected_folders = data.get('selectedFolders', [])
     
     logging.info(f"Received request to save selected folders: {selected_folders}")
     
     try:
-        success, message = save_selected_folders(selected_folders)
+        success, message = update_selected_folders(selected_folders)
         if success:
             return jsonify({"success": True, "message": message})
         else:

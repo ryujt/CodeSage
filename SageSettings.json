@@ -46,7 +46,8 @@
   "ignore_files": [
     "CodeSage.py",
     "SageSettings.json",
-    "question_history.json", 
+    "SageQuestions.json", 
+    "SageFolders.json", 
     "embeddings.jsonl",
     "package-lock.json"
   ],

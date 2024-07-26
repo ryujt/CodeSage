@@ -89,7 +89,6 @@
             const addForm = document.getElementById('add-folder-form');
             const folderList = document.getElementById('folder-list');
             const newFolderInput = document.getElementById('new-folder');
-            const saveSelectionBtn = document.getElementById('save-selection-btn');
 
             addForm.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -132,19 +131,17 @@
                 }
             });
 
-            folderList.addEventListener('change', function() {
-                saveSelectedFolders();
-            });
-
-            addForm.addEventListener('submit', function() {
-                saveSelectedFolders();
+            folderList.addEventListener('change', function(e) {
+                if (e.target.type === 'checkbox') {
+                    saveSelectedFolders();
+                }
             });
 
             function saveSelectedFolders() {
                 const selectedFolders = Array.from(document.querySelectorAll('#folder-list input[type="checkbox"]:checked'))
                     .map(checkbox => checkbox.value);
 
-                fetch('/save_selected_folders', {
+                fetch('/update_selected_folders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({selectedFolders: selectedFolders}),
@@ -160,10 +157,6 @@
                     alert('An error occurred while saving the selection');
                 });
             }
-
-            saveSelectionBtn.addEventListener('click', function() {
-                saveSelectedFolders();
-            });
         });
     </script>
 </body>

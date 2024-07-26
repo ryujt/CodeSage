@@ -7,7 +7,7 @@ from .config import SIMILARITY_THRESHOLD
 from .web_requests import get_embedding
 from .utilities import hash_content, count_tokens
 
-db = TinyDB('question_history.json')
+db = TinyDB('SageQuestions.json')
 MAX_HISTORY_COUNT = 512 
 
 def get_all_questions(revert=False):
