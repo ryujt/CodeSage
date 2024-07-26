@@ -33,12 +33,11 @@ def add_folder(folder_path):
 
 def delete_folder(folder_path):
     try:
-        abs_path = os.path.abspath(os.path.normpath(folder_path))
-        result = folders_table.remove(Query().path == abs_path)
+        result = folders_table.remove(Query().path == folder_path)
         if result:
-            logging.info(f"Folder removed successfully: {abs_path}")
+            logging.info(f"Folder removed successfully: {folder_path}")
             return True, "Folder removed successfully"
-        logging.warning(f"Folder not found in the list: {abs_path}")
+        logging.warning(f"Folder not found in the list: {folder_path}")
         return False, "Folder not found in the list"
     except Exception as e:
         logging.error(f"Error in delete_folder: {str(e)}")
