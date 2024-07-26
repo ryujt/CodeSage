@@ -67,7 +67,6 @@
         </form>
         
         <div class="button-container">
-            <button id="save-selection-btn" class="btn btn-success">Save Selection</button>
             <a href="/" class="btn btn-secondary">Back to Home</a>
         </div>
     </div>
@@ -133,7 +132,15 @@
                 }
             });
 
-            saveSelectionBtn.addEventListener('click', function() {
+            folderList.addEventListener('change', function() {
+                saveSelectedFolders();
+            });
+
+            addForm.addEventListener('submit', function() {
+                saveSelectedFolders();
+            });
+
+            function saveSelectedFolders() {
                 const selectedFolders = Array.from(document.querySelectorAll('#folder-list input[type="checkbox"]:checked'))
                     .map(checkbox => checkbox.value);
 
@@ -144,9 +151,7 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        alert('Selected folders saved successfully');
-                    } else {
+                    if (!data.success) {
                         alert('Failed to save selected folders: ' + data.message);
                     }
                 })
@@ -154,6 +159,10 @@
                     console.error('Error:', error);
                     alert('An error occurred while saving the selection');
                 });
+            }
+
+            saveSelectionBtn.addEventListener('click', function() {
+                saveSelectedFolders();
             });
         });
     </script>

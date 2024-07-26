@@ -9,43 +9,21 @@ folders_table = db.table('folders')
 selected_table = db.table('selected')
 
 def get_all_folders():
-    return [folder['path'] for folder in folders_table.all()]
+    return sorted([folder['path'] for folder in folders_table.all()])
 
 def add_folder(folder_path):
     logging.info(f"Attempting to add folder: {folder_path}")
     
     try:
-        # 시스템 인코딩 확인
-        logging.info(f"File system encoding: {sys.getfilesystemencoding()}")
-        
-        # 경로 정규화 및 절대 경로 변환
-        normalized_path = os.path.normpath(folder_path)
-        logging.info(f"Normalized path: {normalized_path}")
-        
-        abs_path = os.path.abspath(normalized_path)
-        logging.info(f"Absolute path: {abs_path}")
-        
-        # # 경로 존재 여부 확인
-        # if not os.path.exists(abs_path):
-        #     logging.error(f"Directory does not exist: {abs_path}")
-        #     return False, "Invalid directory path (does not exist)"
-        
-        # # 디렉토리 여부 확인
-        # if not os.path.isdir(abs_path):
-        #     logging.error(f"Path is not a directory: {abs_path}")
-        #     return False, "Invalid directory path (not a directory)"
-        
-        logging.info(f"Directory exists and is valid: {abs_path}")
-        
         # 중복 확인
-        existing = folders_table.get(Query().path == abs_path)
+        existing = folders_table.get(Query().path == folder_path)
         if existing:
-            logging.info(f"Folder already exists in the list: {abs_path}")
+            logging.info(f"Folder already exists in the list: {folder_path}")
             return False, "Folder already exists in the list"
         
         # DB에 삽입
-        folders_table.insert({'path': abs_path})
-        logging.info(f"Folder added successfully: {abs_path}")
+        folders_table.insert({'path': folder_path})
+        logging.info(f"Folder added successfully: {folder_path}")
         return True, "Folder added successfully"
     
     except Exception as e:
