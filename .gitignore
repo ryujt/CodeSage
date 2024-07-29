@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 SageFolders.json
 SageQuestions.json
+SageSettings.json
+Embeddings
