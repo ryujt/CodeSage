@@ -86,7 +86,15 @@ def analyze_changes(analysis_type):
         combined_answer = ""
         error_files = []
 
+        # 프로그래밍과 관련 없는 파일 확장자 목록
+        ignored_extensions = ['.md', '.json', '.txt', '.csv', '.xml', '.yml', '.yaml', '.ini', '.conf', '.log', '.gitignore', '.env', '.cfg', '.rst', '.toml']
+
         for file_name in file_names:
+            _, extension = os.path.splitext(file_name)
+            if extension.lower() in ignored_extensions:
+                logging.info(f"Skipping non-programming file: {file_name}")
+                continue
+            
             try:
                 logging.debug(f"Processing changes for file: {file_name}")
                 diff_output = diff_between_branches(folder, analysis_type, specific_file=file_name)
