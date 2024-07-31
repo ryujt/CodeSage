@@ -71,23 +71,28 @@ def index():
 
 @app.route('/analyze_changes/<analysis_type>', methods=['POST'])
 def analyze_changes(analysis_type):
-    extract_embeddings()
+    folders = get_selected_folders()
+    if len(folders) != 1:
+        flash("분석을 위해 정확히 하나의 폴더를 선택해주세요.", "error")
+        return redirect(url_for('index'))
+
+    folder = folders[0]
+    print(folder)
 
     question = "Please reply in Korean.\n\nPlease analyze the changes described in 'Diff:', and refer to the existing code in 'Context:' to identify issues and suggest improvements."
 
     try:
-        file_names = get_changed_files_in_diff(analysis_type)
+        file_names = get_changed_files_in_diff(folder, analysis_type)
         combined_answer = ""
         error_files = []
 
         for file_name in file_names:
             try:
                 logging.debug(f"Processing changes for file: {file_name}")
-                diff_output = diff_between_branches(analysis_type, specific_file=file_name)
-                question_embedding = get_embedding(f"{question}\n\nFilename:{file_name}")
+                diff_output = diff_between_branches(folder, analysis_type, specific_file=file_name)
+                question_embedding = get_embedding(f"Filename:{file_name}\n\nDiff:\n{diff_output}")
 
-                question_part_token_count = count_tokens(f"{question}\n\nDiff:\n{diff_output}")
-                relevant_docs = get_relevant_documents(question_part_token_count, question_embedding)
+                relevant_docs = get_relevant_documents([folder], question_embedding)
 
                 user_message = f"Question: {question}\n\nFilename: {file_name}\n\nDiff:\n{diff_output}\n\nContext:\n{json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"
                 answer = get_chat_response(user_message)
@@ -99,7 +104,7 @@ def analyze_changes(analysis_type):
 
         if combined_answer:
             current_time = datetime.now()
-            doc_id = insert_question(f'Git diff result ({analysis_type}) - {current_time}', combined_answer)
+            doc_id = insert_question(f'Git diff ({analysis_type}) - {current_time}\n{folder}', combined_answer)
             return redirect(url_for('show_question', question_id=doc_id))
 
         if error_files:

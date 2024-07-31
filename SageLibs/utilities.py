@@ -138,24 +138,24 @@ def get_relevant_documents(folders, question_embedding, max_tokens=80000):
 
     return relevant_docs
 
-def get_git_branches():
+def get_git_branches(folder):
     try:
-        branches = subprocess.check_output(['git', 'branch', '--list'], encoding='utf-8')
+        branches = subprocess.check_output(['git', '-C', folder, 'branch', '--list'], encoding='utf-8')
         return branches.split()
     except subprocess.CalledProcessError as e:
-        raise Exception("Git 명령을 실행하는데 실패했습니다.") from e
+        raise Exception(f"{folder}에서 Git 명령을 실행하는데 실패했습니다.") from e
     
-def get_changed_files_in_diff(analysis_type):
-    branches = get_git_branches()
+def get_changed_files_in_diff(folder, analysis_type):
+    branches = get_git_branches(folder)
     base_branch = 'main' if 'main' in branches else 'master' if 'master' in branches else None
     if not base_branch:
-        raise Exception("필요한 브랜치(main 또는 master)가 존재하지 않습니다.")
+        raise Exception(f"{folder}에서 필요한 브랜치(main 또는 master)가 존재하지 않습니다.")
 
     command = []
     if analysis_type == 'main':
-        command = ['git', 'diff', f'{base_branch}..HEAD', '--name-only']
+        command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD', '--name-only']
     elif analysis_type == 'recent':
-        command = ['git', 'diff', 'HEAD~1..HEAD', '--name-only']
+        command = ['git', '-C', folder, 'diff', 'HEAD~1..HEAD', '--name-only']
     else:
         raise Exception("분석 유형이 잘못 지정되었습니다.")
 
@@ -171,21 +171,26 @@ def get_changed_files_in_diff(analysis_type):
                 continue
             if not any(file.endswith(ext) for ext in settings['extensions']):
                 continue
-            filtered_changed_files.append(file)
+            filtered_changed_files.append(os.path.join(folder, file))
         
         return filtered_changed_files
     except subprocess.CalledProcessError as e:
-        raise Exception(f"{analysis_type}에 해당하는 diff 계산 실패.") from e
+        raise Exception(f"{folder}에서 {analysis_type}에 해당하는 diff 계산 실패.") from e
    
-def diff_between_branches(analysis_type, specific_file=None):
-    branches = get_git_branches()
+def diff_between_branches(folder, analysis_type, specific_file=None):
+    branches = get_git_branches(folder)
     base_branch = 'main' if 'main' in branches else 'master' if 'master' in branches else None
     
     if not base_branch:
-        raise Exception("Required branch (main or master) is missing.")
+        raise Exception(f"{folder}에서 필요한 브랜치(main 또는 master)가 존재하지 않습니다.")
 
-    command = ['git', 'diff', f'{base_branch}..HEAD', '--', specific_file] if specific_file else ['git', 'diff', f'{base_branch}..HEAD']
+    if specific_file:
+        specific_file = os.path.join(folder, specific_file)
+        command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD', '--', specific_file]
+    else:
+        command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD']
+    
     try:
         return subprocess.check_output(command, encoding='utf-8')
     except subprocess.CalledProcessError as e:
-        raise Exception(f"Failed to calculate diff for {analysis_type}.") from e    
+        raise Exception(f"{folder}에서 {analysis_type}에 대한 diff 계산 실패.") from e
