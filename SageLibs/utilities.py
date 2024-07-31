@@ -155,23 +155,30 @@ def get_changed_files_in_diff(folder, analysis_type):
     if analysis_type == 'main':
         command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD', '--name-only']
     elif analysis_type == 'recent':
-        command = ['git', '-C', folder, 'diff', 'HEAD~1..HEAD', '--name-only']
+        command = ['git', '-C', folder, 'log', '-1', '--name-only', '--format=']
     else:
         raise Exception("분석 유형이 잘못 지정되었습니다.")
 
     try:
-        all_changed_files = subprocess.check_output(command, encoding='utf-8').strip().split('\n')
+        output = subprocess.check_output(command, encoding='utf-8').strip().split('\n')
+        all_changed_files = [file for file in output if file and not file.startswith(('commit', 'Author:', 'Date:'))]
         
         # Filter the changed files based on settings
         filtered_changed_files = []
         for file in all_changed_files:
-            if file in settings['ignore_files']:
+            file_name = os.path.basename(file)
+            file_dir = os.path.dirname(file)
+            if file_name in settings['ignore_files']:
                 continue
-            if any(ignore_folder in file for ignore_folder in settings['ignore_folders']):
+            if any(ignore_folder in file_dir.split(os.sep) for ignore_folder in settings['ignore_folders']):
                 continue
-            if not any(file.endswith(ext) for ext in settings['extensions']):
+            if not any(file_name.endswith(ext) for ext in settings['extensions']):
                 continue
-            filtered_changed_files.append(os.path.join(folder, file))
+
+            filtered_changed_files.append(file)
+        
+        if not filtered_changed_files:
+            print(f"Warning: No changed files found in {folder} for {analysis_type} analysis.")
         
         return filtered_changed_files
     except subprocess.CalledProcessError as e:

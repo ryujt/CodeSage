@@ -77,7 +77,6 @@ def analyze_changes(analysis_type):
         return redirect(url_for('index'))
 
     folder = folders[0]
-    print(folder)
 
     question = "Please reply in Korean.\n\nPlease analyze the changes described in 'Diff:', and refer to the existing code in 'Context:' to identify issues and suggest improvements."
 
