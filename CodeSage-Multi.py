@@ -108,13 +108,11 @@ For each item, please provide specific line numbers and suggestions for improvem
         for file_name in file_names:
             try:
                 logging.debug(f"Processing changes for file: {file_name}")
-                diff_output = diff_between_branches(folder, specific_file=file_name)
-
+                diff_output = diff_between_branches(folder, analysis_type, specific_file=file_name)
                 question_embedding = get_embedding(f"Filename:{file_name}\n\nDiff:\n{diff_output}")
-
                 relevant_docs = get_relevant_documents([folder], question_embedding)
-
                 user_message = f"Question: {question}\n\nFilename: {file_name}\n\nDiff:\n{diff_output}\n\nContext:\n{json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"
+
                 answer = get_chat_response(user_message)
                 combined_answer += f"# File: {file_name}\n\n{answer}\n\n"
 

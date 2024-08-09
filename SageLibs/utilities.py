@@ -197,33 +197,42 @@ def get_changed_files_in_diff(folder, analysis_type):
     except subprocess.CalledProcessError as e:
         raise Exception(f"{folder}에서 {analysis_type}에 해당하는 diff 계산 실패.") from e
    
-def diff_between_branches(folder, specific_file=None):
-    # 브랜치 목록 가져오기
+def diff_between_branches(folder, analysis_type, specific_file=None):
     branches = get_git_branches(folder)
     print(f"Branches found: {branches}")
 
-    # base_branch 설정
     base_branch = 'main' if 'main' in branches else 'master' if 'master' in branches else None
     print(f"Base branch: {base_branch}")
     
     if not base_branch:
         raise Exception(f"{folder}에서 필요한 브랜치(main 또는 master)가 존재하지 않습니다.")
 
-    # 특정 파일에 대한 diff 계산 여부
+    if analysis_type == 'main':
+        diff_command = f'{base_branch}..HEAD'
+    elif analysis_type == 'recent':
+        diff_command = 'HEAD^..HEAD'
+    else:
+        raise Exception("분석 유형이 잘못 지정되었습니다.")
+
     if specific_file:
         specific_file = os.path.join(folder, specific_file)
         print(f"Specific file for diff: {specific_file}")
-        command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD', '--', specific_file]
+        command = ['git', '-C', folder, 'diff', diff_command, '--', specific_file]
     else:
         print("No specific file provided, diffing entire branch.")
-        command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD']
+        command = ['git', '-C', folder, 'diff', diff_command]
     
-    print(f"Running command: {' '.join(command)}")
-
     try:
+        # UTF-8 디코딩을 시도합니다.
         output = subprocess.check_output(command, encoding='utf-8')
-        print(f"Diff output:\n{output}")
-        return output
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed with error: {e}")
-        raise Exception(f"{folder}에서 diff 계산 실패.") from e
+    except UnicodeDecodeError:
+        # UTF-8 디코딩에 실패하면 바이트 문자열로 출력을 가져옵니다.
+        raw_output = subprocess.check_output(command)
+        # chardet를 사용하여 인코딩을 감지합니다.
+        detected = chardet.detect(raw_output)
+        encoding = detected['encoding']
+        print(f"Detected encoding: {encoding}")
+        # 감지된 인코딩을 사용하여 디코딩합니다.
+        output = raw_output.decode(encoding)
+
+    return output
