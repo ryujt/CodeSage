@@ -155,49 +155,75 @@ def get_changed_files_in_diff(folder, analysis_type):
     if analysis_type == 'main':
         command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD', '--name-only']
     elif analysis_type == 'recent':
-        command = ['git', '-C', folder, 'log', '-1', '--name-only', '--format=']
+        command = ['git', '-C', folder, 'diff', 'HEAD^', 'HEAD', '--name-only']
     else:
         raise Exception("분석 유형이 잘못 지정되었습니다.")
 
     try:
         output = subprocess.check_output(command, encoding='utf-8').strip().split('\n')
-        all_changed_files = [file for file in output if file and not file.startswith(('commit', 'Author:', 'Date:'))]
-        
+        all_changed_files = [file for file in output if file]
+
+        programming_extensions = [
+            '.py', '.js', '.html', '.css', '.java', '.c', '.cpp', '.h', 'hpp', '.ts', 
+            '.tsx', '.jsx', '.json', '.xml', '.php', '.rb', '.go', '.rs', 'pas'
+        ]
+
         # Filter the changed files based on settings
         filtered_changed_files = []
         for file in all_changed_files:
             file_name = os.path.basename(file)
             file_dir = os.path.dirname(file)
+
+            # 확장자 필터링이 처음에 적용되도록 설정
+            if not any(file_name.endswith(ext) for ext in programming_extensions):
+                print(f"File ignored due to extensions: {file_name}")
+                continue
+            
             if file_name in settings['ignore_files']:
+                print(f"File ignored due to ignore_files: {file_name}")
                 continue
             if any(ignore_folder in file_dir.split(os.sep) for ignore_folder in settings['ignore_folders']):
-                continue
-            if not any(file_name.endswith(ext) for ext in settings['extensions']):
+                print(f"File ignored due to ignore_folders: {file}")
                 continue
 
             filtered_changed_files.append(file)
         
         if not filtered_changed_files:
             print(f"Warning: No changed files found in {folder} for {analysis_type} analysis.")
-        
+        else:
+            print(f"Found {len(filtered_changed_files)} changed files in {folder} for {analysis_type} analysis.")
+
         return filtered_changed_files
     except subprocess.CalledProcessError as e:
         raise Exception(f"{folder}에서 {analysis_type}에 해당하는 diff 계산 실패.") from e
    
-def diff_between_branches(folder, analysis_type, specific_file=None):
+def diff_between_branches(folder, specific_file=None):
+    # 브랜치 목록 가져오기
     branches = get_git_branches(folder)
+    print(f"Branches found: {branches}")
+
+    # base_branch 설정
     base_branch = 'main' if 'main' in branches else 'master' if 'master' in branches else None
+    print(f"Base branch: {base_branch}")
     
     if not base_branch:
         raise Exception(f"{folder}에서 필요한 브랜치(main 또는 master)가 존재하지 않습니다.")
 
+    # 특정 파일에 대한 diff 계산 여부
     if specific_file:
         specific_file = os.path.join(folder, specific_file)
+        print(f"Specific file for diff: {specific_file}")
         command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD', '--', specific_file]
     else:
+        print("No specific file provided, diffing entire branch.")
         command = ['git', '-C', folder, 'diff', f'{base_branch}..HEAD']
     
+    print(f"Running command: {' '.join(command)}")
+
     try:
-        return subprocess.check_output(command, encoding='utf-8')
+        output = subprocess.check_output(command, encoding='utf-8')
+        print(f"Diff output:\n{output}")
+        return output
     except subprocess.CalledProcessError as e:
-        raise Exception(f"{folder}에서 {analysis_type}에 대한 diff 계산 실패.") from e
+        print(f"Command failed with error: {e}")
+        raise Exception(f"{folder}에서 diff 계산 실패.") from e

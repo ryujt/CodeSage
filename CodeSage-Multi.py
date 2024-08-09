@@ -78,25 +78,38 @@ def analyze_changes(analysis_type):
 
     folder = folders[0]
 
-    question = "Please reply in Korean.\n\nPlease analyze the changes described in 'Diff:', and refer to the existing code in 'Context:' to identify issues and suggest improvements."
+    question = """Please reply in Korean.
+Analyze the code changes provided in 'Diff:' and refer to the existing code in 'Context:' to generate a detailed report categorized into three sections:
+
+1. Refactoring targets and potential error-prone areas:
+   - Complex or duplicated logic
+   - Unclear naming
+   - Insufficient exception handling
+   - Potential bugs or performance issues
+
+2. Clean code principle application areas:
+   - Violations of Single Responsibility Principle
+   - Function/method length and complexity
+   - Necessity of comments or excessive commenting
+   - Clarity of variable and function names
+
+3. Other code improvement areas:
+   - Potential design pattern applications
+   - Areas needing improved testability
+   - Code structure and architecture improvements
+
+For each item, please provide specific line numbers and suggestions for improvement. Focus primarily on the changes shown in 'Diff:', but refer to the existing code in 'Context:' when necessary for a comprehensive analysis."""
 
     try:
         file_names = get_changed_files_in_diff(folder, analysis_type)
         combined_answer = ""
         error_files = []
 
-        # 프로그래밍과 관련 없는 파일 확장자 목록
-        ignored_extensions = ['.md', '.json', '.txt', '.csv', '.xml', '.yml', '.yaml', '.ini', '.conf', '.log', '.gitignore', '.env', '.cfg', '.rst', '.toml']
-
         for file_name in file_names:
-            _, extension = os.path.splitext(file_name)
-            if extension.lower() in ignored_extensions:
-                logging.info(f"Skipping non-programming file: {file_name}")
-                continue
-            
             try:
                 logging.debug(f"Processing changes for file: {file_name}")
-                diff_output = diff_between_branches(folder, analysis_type, specific_file=file_name)
+                diff_output = diff_between_branches(folder, specific_file=file_name)
+
                 question_embedding = get_embedding(f"Filename:{file_name}\n\nDiff:\n{diff_output}")
 
                 relevant_docs = get_relevant_documents([folder], question_embedding)
