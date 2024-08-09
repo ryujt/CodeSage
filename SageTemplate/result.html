@@ -377,9 +377,9 @@
                     const svg = JobFlowToSVG.generateSVG(code);
                     const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
                     const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}">`);
-                    return `<div class="jobflow-diagram">${modifiedSvg}</div>`;
+                    return `<div class="jobflow-container"><div class="jobflow-diagram">${modifiedSvg}</div></div>`;
                 }
-                return originalCodeRenderer(code, language);
+                return `<div class="code-container">${originalCodeRenderer(code, language)}</div>`;
             };
 
             const htmlContent = marked.parse(markdownContent, { renderer: renderer });
@@ -403,8 +403,8 @@
             function processCodeBlock(block) {
                 if (block.classList.contains('language-mermaid')) {
                     processMermaidDiagram(block);
-                } else if (block.classList.contains('language-jobflow')) {
-                    processJobFlowDiagram(block);
+                } else if (block.parentNode.classList.contains('jobflow-container')) {
+                    processJobFlowDiagram(block.parentNode);
                 } else {
                     hljs.highlightElement(block);
                     const button = createCopyButton(block.textContent);
@@ -429,34 +429,20 @@
                 el.parentNode.replaceChild(containerDiv, el);
             }
 
-            function processJobFlowDiagram(el) {
-                const jobFlowDiv = document.createElement('div');
-                jobFlowDiv.classList.add('jobflow-diagram');
-                const svg = JobFlowToSVG.generateSVG(el.textContent);
-                const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
-                const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}">`);
-                jobFlowDiv.innerHTML = modifiedSvg;
-
-                const copyButton = createCopyButton(el.textContent);
-                copyButton.style.position = 'absolute';
-                copyButton.style.top = '5px';
-                copyButton.style.right = '5px';
-
-                const containerDiv = document.createElement('div');
-                containerDiv.style.position = 'relative';
-                containerDiv.appendChild(jobFlowDiv);
-                containerDiv.appendChild(copyButton);
-                el.parentNode.replaceChild(containerDiv, el);
+            function processJobFlowDiagram(container) {
+                const jobFlowDiv = container.querySelector('.jobflow-diagram');
+                const copyButton = createCopyButton(jobFlowDiv.innerHTML);
+                container.insertBefore(copyButton, jobFlowDiv);
             }
 
-            document.querySelectorAll('pre code').forEach(processCodeBlock);
+            document.querySelectorAll('pre code, .jobflow-container').forEach(processCodeBlock);
 
             mermaid.initialize({
                 startOnLoad: true,
                 securityLevel: 'loose',
                 theme: 'default'
             });
-
+            
             const deleteButtons = document.querySelectorAll('.delete-button');
             deleteButtons.forEach(button => {
                 button.addEventListener('click', function (e) {
