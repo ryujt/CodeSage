@@ -63,13 +63,6 @@ Code Sage는 OpenAI 또는 Claude API를 활용하여 프로젝트 코드베이�
 
 10. "Analyze from main branch" 또는 "Analyze Recent Commit" 버튼을 사용하여 코드 변경사항을 분석할 수 있습니다.
 
-## 동영상 설명
-
-* [RAG를 구축하는 가장 간단한 방법](https://youtu.be/-ip-y4tGfp4)
-* [인공지능으로 프로젝트 전체 코드를 분석하기](https://youtu.be/k5LdQxMj0qE)
-* [인공지능과 함께 페어 프로그래밍 하기](https://youtu.be/fyzwT0xp2Xc)
-* [인공지능으로 노션 문서 요약 및 검색하기](https://github.com/ryujt/CodeSage)
-
 ## 설정 변경
 
 - 설정 페이지(`http://localhost:8080/settings`)에서 다음 항목을 수정할 수 있습니다:
