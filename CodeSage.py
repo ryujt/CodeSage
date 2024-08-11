@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import shutil
 import nltk
 from datetime import datetime 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
@@ -10,6 +9,7 @@ from SageLibs.config import load_settings, get_settings, update_settings
 from SageLibs.web_requests import get_embedding, get_chat_response
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
 from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question, get_relevant_answers
+from SageLibs.folders import get_all_folders, add_folder, delete_folder, get_selected_folders, update_selected_folders
 
 app = Flask(__name__, template_folder='SageTemplate')
 app.secret_key = 'your_secret_key_here'
@@ -30,7 +30,7 @@ def index():
         
         question_part_token_count = count_tokens(question)
         relevant_answers = get_relevant_answers(question_embedding)
-        relevant_docs = get_relevant_documents(['./'], question_embedding)
+        relevant_docs = get_relevant_documents(get_selected_folders(), question_embedding)
         
         # 토큰 수 제한 및 선택 로직
         max_tokens = 80000
@@ -67,29 +67,52 @@ def index():
         return redirect(url_for('show_question', question_id=doc_id))
 
     questions = get_all_questions(revert=True)
-    return render_template('index.html', questions=questions)
+    return render_template('index-multi.html', questions=questions)
 
 @app.route('/analyze_changes/<analysis_type>', methods=['POST'])
 def analyze_changes(analysis_type):
-    extract_embeddings()
+    folders = get_selected_folders()
+    if len(folders) != 1:
+        flash("분석을 위해 정확히 하나의 폴더를 선택해주세요.", "error")
+        return redirect(url_for('index'))
 
-    question = "Please reply in Korean.\n\nPlease analyze the changes described in 'Diff:', and refer to the existing code in 'Context:' to identify issues and suggest improvements."
+    folder = folders[0]
+
+    question = """Please reply in Korean.
+Analyze the code changes provided in 'Diff:' and refer to the existing code in 'Context:' to generate a detailed report categorized into three sections:
+
+1. Refactoring targets and potential error-prone areas:
+   - Complex or duplicated logic
+   - Unclear naming
+   - Insufficient exception handling
+   - Potential bugs or performance issues
+
+2. Clean code principle application areas:
+   - Violations of Single Responsibility Principle
+   - Function/method length and complexity
+   - Necessity of comments or excessive commenting
+   - Clarity of variable and function names
+
+3. Other code improvement areas:
+   - Potential design pattern applications
+   - Areas needing improved testability
+   - Code structure and architecture improvements
+
+For each item, please provide specific line numbers and suggestions for improvement. Focus primarily on the changes shown in 'Diff:', but refer to the existing code in 'Context:' when necessary for a comprehensive analysis."""
 
     try:
-        file_names = get_changed_files_in_diff(analysis_type)
+        file_names = get_changed_files_in_diff(folder, analysis_type)
         combined_answer = ""
         error_files = []
 
         for file_name in file_names:
             try:
                 logging.debug(f"Processing changes for file: {file_name}")
-                diff_output = diff_between_branches(analysis_type, specific_file=file_name)
-                question_embedding = get_embedding(f"{question}\n\nFilename:{file_name}")
-
-                question_part_token_count = count_tokens(f"{question}\n\nDiff:\n{diff_output}")
-                relevant_docs = get_relevant_documents(question_part_token_count, question_embedding)
-
+                diff_output = diff_between_branches(folder, analysis_type, specific_file=file_name)
+                question_embedding = get_embedding(f"Filename:{file_name}\n\nDiff:\n{diff_output}")
+                relevant_docs = get_relevant_documents([folder], question_embedding)
                 user_message = f"Question: {question}\n\nFilename: {file_name}\n\nDiff:\n{diff_output}\n\nContext:\n{json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"
+
                 answer = get_chat_response(user_message)
                 combined_answer += f"# File: {file_name}\n\n{answer}\n\n"
 
@@ -99,7 +122,7 @@ def analyze_changes(analysis_type):
 
         if combined_answer:
             current_time = datetime.now()
-            doc_id = insert_question(f'Git diff result ({analysis_type}) - {current_time}', combined_answer)
+            doc_id = insert_question(f'Git diff ({analysis_type}) - {current_time}\n{folder}', combined_answer)
             return redirect(url_for('show_question', question_id=doc_id))
 
         if error_files:
@@ -137,43 +160,49 @@ def delete_question_route(question_id):
 def extract_embeddings():
     logging.info("임베딩 추출 시작")
 
-    existing_embeddings = load_embeddings(EMBEDDINGS_FILE)
-    file_paths = get_file_paths('.')
-    error_files = []
+    folders = get_selected_folders()
+    logging.info(f"Selected folders: {folders}")
 
-    with open(EMBEDDINGS_FILE, 'w', encoding='utf-8') as f:
-        for file_path in file_paths:
-            try:
-                relative_path = os.path.relpath(file_path)
-                logging.info(f"Processing {relative_path}")
-                
-                content = read_file(file_path)
-                content_hash = hash_content(content)
+    for folder in folders:
+        embedding_file = os.path.join(folder, EMBEDDINGS_FILE)
+        existing_embeddings = load_embeddings(embedding_file)
+        file_paths = get_file_paths(folder)
+        error_files = []
 
-                if relative_path in existing_embeddings and existing_embeddings[relative_path]['content_hash'] == content_hash:
-                    file_data = existing_embeddings[relative_path]
-                else:
-                    logging.info(f"  - Changes detected or new file, generating new embedding")
-                    embedding = get_embedding(content)
-                    file_data = {
-                        "filename": relative_path, 
-                        "content": content,
-                        "content_hash": content_hash,
-                        "embedding": embedding
-                    }
+        with open(embedding_file, 'w', encoding='utf-8') as f:
+            for file_path in file_paths:
+                try:
+                    relative_path = os.path.relpath(file_path, start=folder)
+                    logging.info(f"Processing {relative_path}")
+                    
+                    content = read_file(file_path)
+                    content_hash = hash_content(content)
 
-                f.write(json.dumps(file_data, ensure_ascii=False) + '\n')
-            except Exception as e:
-                logging.error(f"Error processing {file_path}: {str(e)}", exc_info=True)
-                error_files.append(relative_path)
+                    if relative_path in existing_embeddings and existing_embeddings[relative_path]['content_hash'] == content_hash:
+                        file_data = existing_embeddings[relative_path]
+                    else:
+                        logging.info(f"  - Changes detected or new file, generating new embedding")
+                        embedding = get_embedding(content)
+                        file_data = {
+                            "filename": relative_path, 
+                            "content": content,
+                            "content_hash": content_hash,
+                            "embedding": embedding
+                        }
 
-    logging.info(f"Embedding extraction complete. Results saved to {EMBEDDINGS_FILE}")
-    if error_files:
-        error_message = f"The following files encountered errors and were skipped: {', '.join(error_files)}"
-        logging.warning(error_message)
-        flash(error_message, "warning")
-    else:
-        flash("임베딩 추출이 성공적으로 완료되었습니다.", "success")
+                    f.write(json.dumps(file_data, ensure_ascii=False) + '\n')
+                except Exception as e:
+                    logging.error(f"Error processing {file_path}: {str(e)}", exc_info=True)
+                    error_files.append(relative_path)
+
+        logging.info(f"Embedding extraction complete for folder {folder}. Results saved to {embedding_file}")
+        if error_files:
+            error_message = f"The following files encountered errors and were skipped in folder {folder}: {', '.join(error_files)}"
+            logging.warning(error_message)
+            flash(error_message, "warning")
+        else:
+            flash(f"임베딩 추출이 성공적으로 완료되었습니다 for folder {folder}.", "success")
+
     return redirect(url_for('index'))
 
 @app.route('/settings', methods=['GET', 'POST'])
@@ -201,6 +230,62 @@ def settings_route():
                            ignore_files=", ".join(settings['ignore_files']),
                            essential_files=", ".join(settings['essential_files']),
                            openai_api_key=settings['openai_api_key'])
+
+@app.route('/select_folders', methods=['GET'])
+def select_folders():
+    folders = get_all_folders()
+    selected_folders = get_selected_folders()
+    return render_template('sage_folders.html', folders=folders, selected_folders=selected_folders)
+
+@app.route('/add_folder', methods=['POST'])
+def add_folder_route():
+    data = request.json
+    folder = data.get('folder')
+    if not folder:
+        logging.warning("Add folder request received with no folder specified")
+        return jsonify({"success": False, "message": "No folder provided"}), 400
+    
+    logging.info(f"Received request to add folder: {folder}")
+    
+    try:
+        success, message = add_folder(folder)
+        if success:
+            logging.info(f"Successfully added folder: {folder}")
+            return jsonify({"success": True, "message": message})
+        else:
+            logging.warning(f"Failed to add folder: {folder}. Reason: {message}")
+            return jsonify({"success": False, "message": message}), 400
+    except Exception as e:
+        logging.error(f"Unexpected error in add_folder_route: {str(e)}")
+        logging.error(traceback.format_exc())
+        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
+
+@app.route('/delete_folder', methods=['POST'])
+def delete_folder_route():
+    folder = request.json.get('folder')
+    if not folder:
+        return jsonify({"success": False, "message": "No folder provided"}), 400
+    
+    success, message = delete_folder(folder)
+    return jsonify({"success": success, "message": message})
+
+@app.route('/update_selected_folders', methods=['POST'])
+def update_selected_folders_route():
+    data = request.json
+    selected_folders = data.get('selectedFolders', [])
+    
+    logging.info(f"Received request to save selected folders: {selected_folders}")
+    
+    try:
+        success, message = update_selected_folders(selected_folders)
+        if success:
+            return jsonify({"success": True, "message": message})
+        else:
+            return jsonify({"success": False, "message": message}), 400
+    except Exception as e:
+        logging.error(f"Error saving selected folders: {str(e)}")
+        logging.error(traceback.format_exc())
+        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
