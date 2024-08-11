@@ -12,7 +12,7 @@ Code Sage는 OpenAI 또는 Claude API를 활용하여 프로젝트 코드베이�
 - Analyze from main branch: main 브랜치부터 현재 커밋된 내용까지의 변화에 대한 분석
 - Analyze Recent Commit: 가장 최근 커밋의 변화에 대한 분석
 
-## 설치 방법
+## 설치 및 사용 방법
 
 1. 이 저장소를 클론하거나 다운받습니다:
    ```
@@ -29,7 +29,12 @@ Code Sage는 OpenAI 또는 Claude API를 활용하여 프로젝트 코드베이�
    pip install -r requirements.txt
    ```
 
-4. OpenAI API 키와 선택적으로 Claude API 키를 설정합니다:
+4. 애플리케이션을 실행합니다:
+   ```
+   python CodeSage.py
+   ```
+
+5. OpenAI API 키와 선택적으로 Claude API 키를 설정합니다:
    - `SageSettings.json` 파일을 열고 API 키를 입력합니다:
      ```json
      {
@@ -44,22 +49,19 @@ Code Sage는 OpenAI 또는 Claude API를 활용하여 프로젝트 코드베이�
    - OpenAI API 키만 입력하셔도 사용할 수 있습니다.
    - Claude를 사용하고자할 때에는 OpenAI API 키와 Claude API 키를 모두 입력해야합니다. 아직 Claude가 임베딩 관련 API를 제공하지 않기 때문입니다.
 
-## 사용 방법
+6. 웹 브라우저에서 `http://localhost:8080`에 접속합니다.
 
-1. 애플리케이션을 실행합니다:
-   ```
-   python CodeSage.py
-   ```
+7. 폴더 버튼을 클릭하고 분석하고자하는 전체 경로를 입력하여 추가합니다.
+   * 입력된 경로 중에 사용할 경로의 체크박스를 선택하여야 합니다.
+   * 경로는 여러 개를 동시에 선택할 수 있습니다.
 
-2. 웹 브라우저에서 `http://localhost:8080`에 접속합니다.
-
-3. "Refresh Embeddings" 버튼을 클릭하여 프로젝트 파일의 임베딩을 생성합니다.
+8. "Refresh Embeddings" 버튼을 클릭하여 프로젝트 파일의 임베딩을 생성합니다.
    * 참조 대상이 되는 모든 파일을 찾아서 벡터로 변환하여 AI가 이해할 수 있도록 준비합니다.
    * 이미 처리된 파일은 중복 처리하지 않습니다. 버튼을 주기적으로 눌러 최신 상태를 유지하세요.
 
-4. 질문을 입력하고 제출하여 AI의 답변을 받습니다.
+9.  질문을 입력하고 제출하여 AI의 답변을 받습니다.
 
-5. "Analyze from main branch" 또는 "Analyze Recent Commit" 버튼을 사용하여 코드 변경사항을 분석할 수 있습니다.
+10. "Analyze from main branch" 또는 "Analyze Recent Commit" 버튼을 사용하여 코드 변경사항을 분석할 수 있습니다.
 
 ## 설정 변경
 
