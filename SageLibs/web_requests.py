@@ -26,6 +26,7 @@ def get_embedding(text):
             raise ValueError(f"Unexpected API response structure: {result}")
         return result['data'][0]['embedding']
     except RequestException as e:
+        # API 요청 실패
         error_message = "API 요청 실패"
         if hasattr(e, 'response') and e.response is not None:
             status_code = e.response.status_code
@@ -215,6 +216,7 @@ def is_english_or_code(text):
 
 def translate_file(file_path):
     translated_content = []
+    lines_to_translate = []
 
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -222,16 +224,36 @@ def translate_file(file_path):
                 stripped_line = line.strip()
                 if stripped_line:  # 빈 줄이 아닌 경우에만 처리
                     if is_english_or_code(stripped_line):
+                        # 영어나 코드인 경우, 이전에 모아둔 한글 라인들을 번역
+                        if lines_to_translate:
+                            translated_text = translate_to_english('\n'.join(lines_to_translate))
+                            translated_content.extend(translated_text.split('\n'))
+                            print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                            print(f"Original:\n{chr(10).join(lines_to_translate)}")
+                            lines_to_translate = []
+                        
                         translated_content.append(line.rstrip('\n'))
                         print(f"Line {line_number} (Original): {line.rstrip()}")
                     else:
-                        translated_line = translate_to_english(stripped_line)
-                        translated_content.append(translated_line)
-                        print(f"Line {line_number} (Translated): {translated_line}")
-                        print(f"Original: {stripped_line}")
+                        lines_to_translate.append(stripped_line)
                 else:
+                    # 빈 줄을 만났을 때도 이전에 모아둔 한글 라인들을 번역
+                    if lines_to_translate:
+                        translated_text = translate_to_english('\n'.join(lines_to_translate))
+                        translated_content.extend(translated_text.split('\n'))
+                        print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                        print(f"Original:\n{chr(10).join(lines_to_translate)}")
+                        lines_to_translate = []
+                    
                     translated_content.append(line.rstrip('\n'))
                     print(f"Line {line_number} (Empty)")
+
+        # 파일의 끝에 도달했을 때 남아있는 한글 라인들 처리
+        if lines_to_translate:
+            translated_text = translate_to_english('\n'.join(lines_to_translate))
+            translated_content.extend(translated_text.split('\n'))
+            print(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Translated):\n{translated_text}")
+            print(f"Original:\n{chr(10).join(lines_to_translate)}")
 
     except IOError as e:
         logging.error(f"파일 읽기 오류: {str(e)}")
