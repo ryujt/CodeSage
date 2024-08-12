@@ -4,9 +4,9 @@ import logging
 import nltk
 from datetime import datetime 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from SageLibs.config import EMBEDDINGS_FILE
+from SageLibs.config import EMBEDDINGS_FILE, settings
 from SageLibs.config import load_settings, get_settings, update_settings
-from SageLibs.web_requests import get_embedding, get_chat_response
+from SageLibs.web_requests import get_embedding, summarize_content, get_chat_response
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
 from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question, get_relevant_answers
 from SageLibs.folders import get_all_folders, add_folder, delete_folder, get_selected_folders, update_selected_folders
@@ -31,6 +31,10 @@ def index():
         question_part_token_count = count_tokens(question)
         relevant_answers = get_relevant_answers(question_embedding)
         relevant_docs = get_relevant_documents(get_selected_folders(), question_embedding)
+
+        if settings['filter_content'] == 'on':
+            for doc in relevant_docs:
+                doc['content'] = summarize_content(question, doc['content'])
         
         # 토큰 수 제한 및 선택 로직
         max_tokens = 80000
@@ -49,7 +53,7 @@ def index():
                 else:  # relevant_answers의 항목
                     selected_answers.append(item)
                 remaining_tokens -= item['tokens']
-            
+           
             if remaining_tokens <= 0:
                 break
         
@@ -211,6 +215,7 @@ def settings_route():
         logging.debug("설정 업데이트 시작")
         new_settings = {
             'openai_api_key': request.form.get('apiKey', 'your_openai_api_key'),
+            'filter_content': request.form.get('filterContent'),
             'extensions': request.form.get('extensions'),
             'ignore_folders': request.form.get('ignoreFolders'),
             'ignore_files': request.form.get('ignoreFiles'),
@@ -224,12 +229,24 @@ def settings_route():
     
     settings = get_settings()
     logging.debug(f"현재 설정: {settings}")
-    return render_template('settings.html', 
-                           extensions=", ".join(settings['extensions']),
-                           ignore_folders=", ".join(settings['ignore_folders']),
-                           ignore_files=", ".join(settings['ignore_files']),
-                           essential_files=", ".join(settings['essential_files']),
-                           openai_api_key=settings['openai_api_key'])
+
+    template_data = {
+        'extensions': ", ".join(settings.get('extensions', [])),
+        'ignore_folders': ", ".join(settings.get('ignore_folders', [])),
+        'ignore_files': ", ".join(settings.get('ignore_files', [])),
+        'essential_files': ", ".join(settings.get('essential_files', [])),
+        'openai_api_key': settings.get('openai_api_key', ''),
+        'filter_content': settings.get('filter_content', False)
+    }
+
+    return render_template('settings.html', **template_data)    
+    # return render_template('settings.html', 
+    #                        extensions=", ".join(settings['extensions']),
+    #                        filter_content=", ".join(settings['filter_content']),
+    #                        ignore_folders=", ".join(settings['ignore_folders']),
+    #                        ignore_files=", ".join(settings['ignore_files']),
+    #                        essential_files=", ".join(settings['essential_files']),
+    #                        openai_api_key=settings['openai_api_key'])
 
 @app.route('/select_folders', methods=['GET'])
 def select_folders():

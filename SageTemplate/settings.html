@@ -18,6 +18,10 @@
                 <label for="apiKey" class="form-label">OpenAI API Key:</label>
                 <input type="text" class="form-control" id="apiKey" name="apiKey" value="{{ openai_api_key }}">
             </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="filterContent" name="filterContent" {{ 'checked' if filter_content else '' }}>
+                <label class="form-check-label" for="filterContent">Filter and process only relevant content</label>
+            </div>
             <div class="mb-3">
                 <label for="extensions" class="form-label">Extensions:</label>
                 <input type="text" class="form-control" id="extensions" name="extensions" value="{{ extensions }}">

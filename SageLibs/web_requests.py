@@ -42,6 +42,48 @@ def get_embedding(text):
         error_message = f"API 응답 처리 오류: {str(e)}"
         logging.error(error_message)
         raise ValueError(error_message) from e
+    
+def summarize_content(question, text):
+    settings = get_settings()
+    api_key = settings.get('openai_api_key', '')
+
+    system_message = "You are an AI assistant specialized in extracting relevant information."
+    user_message = f"""Find and return only the content that is relevant to the question in 'question:' from the 'text:.' 
+If there is no relevant content, return an empty string.
+
+text:
+{text}
+
+question:
+{question}
+"""
+   
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message}
+    ]
+
+    data = json.dumps({
+        "model": "gpt-4o-mini",
+        "messages": messages,
+        "temperature": 0
+    })
+
+    try:
+        response = requests.post(CHAT_API_URL, headers=headers, data=data)
+        response.raise_for_status()
+        return response.json()['choices'][0]['message']['content']
+    except RequestException as e:
+        logging.error(f"Chat API 요청 실패: {str(e)}")
+        return ""
+    except (KeyError, IndexError) as e:
+        logging.error(f"Chat API 응답 처리 오류: {str(e)}")
+        return ""
 
 def get_chat_response(user_message):    
     settings = get_settings()
@@ -81,6 +123,7 @@ def get_chat_response_openai(api_key, system_message, user_message):
         "messages": messages,
         "temperature": 0
     })
+
     try:
         response = requests.post(CHAT_API_URL, headers=headers, data=data)
         response.raise_for_status()
