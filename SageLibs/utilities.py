@@ -18,10 +18,7 @@ def load_embeddings(file_path):
                 embeddings[data['filename']] = data
     return embeddings
 
-def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARITY_THRESHOLD, top_k=50):
-    if settings['filter_content'] == 'on':
-        top_k = 20
-
+def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARITY_THRESHOLD, top_k=100):
     essential_files = {filename: 10 for filename in settings['essential_files']}
 
     similarities = {}

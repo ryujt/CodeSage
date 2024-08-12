@@ -32,10 +32,6 @@ def index():
         relevant_answers = get_relevant_answers(question_embedding)
         relevant_docs = get_relevant_documents(get_selected_folders(), question_embedding)
 
-        if settings['filter_content'] == 'on':
-            for doc in relevant_docs:
-                doc['content'] = summarize_content(question, doc['content'])
-        
         # 토큰 수 제한 및 선택 로직
         max_tokens = 80000
         remaining_tokens = max_tokens - question_part_token_count
@@ -49,13 +45,22 @@ def index():
         for item in all_items:
             if remaining_tokens - item['tokens'] >= 0:
                 if 'filename' in item:  # relevant_docs의 항목
+                    if settings['filter_content'] == 'on':
+                        item['content'] = summarize_content(question, item['content'])      
                     selected_docs.append(item)
+
                 else:  # relevant_answers의 항목
+                    if settings['filter_content'] == 'on':
+                        item['answer'] = summarize_content(question, item['answer'])      
                     selected_answers.append(item)
+
                 remaining_tokens -= item['tokens']
            
             if remaining_tokens <= 0:
                 break
+
+        print("selected_docs: ", selected_docs)
+        print("selected_answers: ", selected_answers)
 
         user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: \n{json.dumps(selected_answers, ensure_ascii=False)}"
         if len(selected_answers) == 0:
