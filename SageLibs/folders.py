@@ -11,13 +11,11 @@ def add_folder(folder_path):
     logging.info(f"Attempting to add folder: {folder_path}")
     
     try:
-        # 중복 확인
         existing = folders_table.get(Query().path == folder_path)
         if existing:
             logging.info(f"Folder already exists in the list: {folder_path}")
             return False, "Folder already exists in the list"
         
-        # DB에 삽입
         folders_table.insert({'path': folder_path, 'selected': False})
         logging.info(f"Folder added successfully: {folder_path}")
         return True, "Folder added successfully"

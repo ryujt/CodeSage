@@ -309,4 +309,4 @@ if __name__ == "__main__":
     # load_settings()
     # app.run(debug=True, host='0.0.0.0', port=8080)
 
-    print(translate_file("SageLibs/web_requests.py"))
+    print(translate_file("/Users/ryu/Library/Mobile Documents/com~apple~CloudDocs/글쓰기/도 닦는 프로그래머.md"))

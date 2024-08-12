@@ -217,6 +217,7 @@ def is_english_or_code(text):
 def translate_file(file_path):
     translated_content = []
     lines_to_translate = []
+    leading_spaces = []
 
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -226,33 +227,73 @@ def translate_file(file_path):
                     if is_english_or_code(stripped_line):
                         # 영어나 코드인 경우, 이전에 모아둔 한글 라인들을 번역
                         if lines_to_translate:
-                            translated_text = translate_to_english('\n'.join(lines_to_translate))
-                            translated_content.extend(translated_text.split('\n'))
-                            print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                            try:
+                                translated_text = translate_to_english('\n'.join(lines_to_translate))
+                                translated_lines = translated_text.split('\n')
+                                for i, translated_line in enumerate(translated_lines):
+                                    if i < len(leading_spaces):
+                                        translated_content.append(leading_spaces[i] + translated_line)
+                                    else:
+                                        translated_content.append(translated_line)
+                                print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                            except Exception as e:
+                                logging.error(f"Translation error: {str(e)}")
+                                # 오류 발생 시 원문 그대로 추가
+                                for i, original_line in enumerate(lines_to_translate):
+                                    translated_content.append(leading_spaces[i] + original_line)
+                                print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Original kept due to error)")
                             print(f"Original:\n{chr(10).join(lines_to_translate)}")
                             lines_to_translate = []
+                            leading_spaces = []
                         
                         translated_content.append(line.rstrip('\n'))
                         print(f"Line {line_number} (Original): {line.rstrip()}")
                     else:
+                        leading_space = line[:len(line) - len(line.lstrip())]
                         lines_to_translate.append(stripped_line)
+                        leading_spaces.append(leading_space)
                 else:
                     # 빈 줄을 만났을 때도 이전에 모아둔 한글 라인들을 번역
                     if lines_to_translate:
-                        translated_text = translate_to_english('\n'.join(lines_to_translate))
-                        translated_content.extend(translated_text.split('\n'))
-                        print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                        try:
+                            translated_text = translate_to_english('\n'.join(lines_to_translate))
+                            translated_lines = translated_text.split('\n')
+                            for i, translated_line in enumerate(translated_lines):
+                                if i < len(leading_spaces):
+                                    translated_content.append(leading_spaces[i] + translated_line)
+                                else:
+                                    translated_content.append(translated_line)
+                            print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                        except Exception as e:
+                            logging.error(f"Translation error: {str(e)}")
+                            # 오류 발생 시 원문 그대로 추가
+                            for i, original_line in enumerate(lines_to_translate):
+                                translated_content.append(leading_spaces[i] + original_line)
+                            print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Original kept due to error)")
                         print(f"Original:\n{chr(10).join(lines_to_translate)}")
                         lines_to_translate = []
+                        leading_spaces = []
                     
                     translated_content.append(line.rstrip('\n'))
                     print(f"Line {line_number} (Empty)")
 
         # 파일의 끝에 도달했을 때 남아있는 한글 라인들 처리
         if lines_to_translate:
-            translated_text = translate_to_english('\n'.join(lines_to_translate))
-            translated_content.extend(translated_text.split('\n'))
-            print(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Translated):\n{translated_text}")
+            try:
+                translated_text = translate_to_english('\n'.join(lines_to_translate))
+                translated_lines = translated_text.split('\n')
+                for i, translated_line in enumerate(translated_lines):
+                    if i < len(leading_spaces):
+                        translated_content.append(leading_spaces[i] + translated_line)
+                    else:
+                        translated_content.append(translated_line)
+                print(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Translated):\n{translated_text}")
+            except Exception as e:
+                logging.error(f"Translation error: {str(e)}")
+                # 오류 발생 시 원문 그대로 추가
+                for i, original_line in enumerate(lines_to_translate):
+                    translated_content.append(leading_spaces[i] + original_line)
+                print(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Original kept due to error)")
             print(f"Original:\n{chr(10).join(lines_to_translate)}")
 
     except IOError as e:
