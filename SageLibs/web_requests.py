@@ -200,7 +200,17 @@ def get_chat_response_ollama(message):
         return "Error: Failed to parse Ollama API response"
     
 def translate_to_english(text):
-    message = f"Translate all non-English text into English in the article below. Maintain the original text structure, including spaces and line breaks. Output as plain text, not markdown.\n___\n{text}"
+    message = f"""Translate all non-English text into English in the article below.
+Follow these rules strictly:
+1. Maintain the original text structure, including spaces and line breaks.
+2. If you cannot translate any part, return that part unchanged.
+3. Do not add any explanations, comments, or notes about the translation.
+4. Do not describe the content or structure of the text.
+5. Only return the translated text, nothing else.
+---
+{text}
+"""
+    
     result = get_chat_response_ollama(message)
     result = '\n'.join(line for line in result.splitlines() if line.strip())
     return result
