@@ -56,8 +56,11 @@ def index():
            
             if remaining_tokens <= 0:
                 break
-        
-        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_answers: \n{json.dumps(selected_answers, ensure_ascii=False)}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}"
+
+        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: \n{json.dumps(selected_answers, ensure_ascii=False)}"
+        if len(selected_answers) == 0:
+            user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: none"
+        print("-----> ", user_message)
         
         try:
             answer = get_chat_response(user_message)
