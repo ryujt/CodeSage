@@ -6,7 +6,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from SageLibs.config import EMBEDDINGS_FILE, settings
 from SageLibs.config import load_settings, get_settings, update_settings
-from SageLibs.web_requests import get_embedding, summarize_content, get_chat_response
+from SageLibs.web_requests import get_embedding, summarize_content, get_chat_response, translate_to_english, translate_file
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
 from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question, get_relevant_answers
 from SageLibs.folders import get_all_folders, add_folder, delete_folder, get_selected_folders, update_selected_folders
@@ -304,7 +304,9 @@ def update_selected_folders_route():
         return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-    nltk.download('punkt', quiet=True)
-    load_settings()
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    # nltk.download('punkt', quiet=True)
+    # load_settings()
+    # app.run(debug=True, host='0.0.0.0', port=8080)
+
+    print(translate_file("SageLibs/web_requests.py"))

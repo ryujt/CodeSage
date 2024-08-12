@@ -171,4 +171,70 @@ def get_chat_response_claude(api_key, system_message, user_message):
     elif 'error' in response_json:
         return f"Error: {response_json['error']['message']}"
     else:
-        return "Unexpected response structure from Claude API"    
+        return "Unexpected response structure from Claude API"
+    
+def get_chat_response_ollama(message):
+    logging.debug("Ollama API 호출 시작")
+
+    url = "http://localhost:11434/api/generate"
+    headers = {
+        "Content-Type": "application/json"
+    }
+    data = json.dumps({
+        "model": "gemma2",
+        "prompt": message,
+        "stream": False
+    })
+
+    try:
+        response = requests.post(url, headers=headers, data=data)
+        response.raise_for_status()
+        result = response.json()
+        return result.get('response', "Unexpected response structure from Ollama API")
+    except RequestException as e:
+        logging.error(f"Ollama API 요청 실패: {str(e)}")
+        return f"Error: Ollama API request failed - {str(e)}"
+    except json.JSONDecodeError as e:
+        logging.error(f"Ollama API 응답 처리 오류: {str(e)}")
+        return "Error: Failed to parse Ollama API response"
+    
+def translate_to_english(text):
+    message = f"Translate all non-English text into English in the article below. Maintain the original text structure, including spaces and line breaks. Output as plain text, not markdown.\n___\n{text}"
+    result = get_chat_response_ollama(message)
+    result = '\n'.join(line for line in result.splitlines() if line.strip())
+    return result
+
+def is_english_or_code(text):
+    for i, char in enumerate(text):
+        if char.isspace() or char in '.,;:!?-_()[]{}\'"`+*&^%$#@~<>|/\\=':
+            continue
+        if not (char.isascii() and char.isalnum()):
+            logging.info(f"Non-English character detected: '{char}' (Unicode: U+{ord(char):04X}) at position {i} in text: '{text}'")
+            return False
+    return True
+
+def translate_file(file_path):
+    translated_content = []
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for line_number, line in enumerate(file, 1):
+                stripped_line = line.strip()
+                if stripped_line:  # 빈 줄이 아닌 경우에만 처리
+                    if is_english_or_code(stripped_line):
+                        translated_content.append(line.rstrip('\n'))
+                        print(f"Line {line_number} (Original): {line.rstrip()}")
+                    else:
+                        translated_line = translate_to_english(stripped_line)
+                        translated_content.append(translated_line)
+                        print(f"Line {line_number} (Translated): {translated_line}")
+                        print(f"Original: {stripped_line}")
+                else:
+                    translated_content.append(line.rstrip('\n'))
+                    print(f"Line {line_number} (Empty)")
+
+    except IOError as e:
+        logging.error(f"파일 읽기 오류: {str(e)}")
+        return f"Error: Failed to read file - {str(e)}"
+
+    return '\n'.join(translated_content)
