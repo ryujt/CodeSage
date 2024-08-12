@@ -216,6 +216,7 @@ def settings_route():
         new_settings = {
             'openai_api_key': request.form.get('apiKey', 'your_openai_api_key'),
             'filter_content': request.form.get('filterContent'),
+            'use_question_history': request.form.get('useQuestionHistory'),
             'extensions': request.form.get('extensions'),
             'ignore_folders': request.form.get('ignoreFolders'),
             'ignore_files': request.form.get('ignoreFiles'),
@@ -231,22 +232,16 @@ def settings_route():
     logging.debug(f"현재 설정: {settings}")
 
     template_data = {
+        'openai_api_key': settings.get('openai_api_key', ''),
+        'filter_content': settings.get('filter_content', ''),
+        'use_question_history': settings.get('use_question_history', ''),
         'extensions': ", ".join(settings.get('extensions', [])),
         'ignore_folders': ", ".join(settings.get('ignore_folders', [])),
         'ignore_files': ", ".join(settings.get('ignore_files', [])),
-        'essential_files': ", ".join(settings.get('essential_files', [])),
-        'openai_api_key': settings.get('openai_api_key', ''),
-        'filter_content': settings.get('filter_content', False)
+        'essential_files': ", ".join(settings.get('essential_files', []))
     }
 
     return render_template('settings.html', **template_data)    
-    # return render_template('settings.html', 
-    #                        extensions=", ".join(settings['extensions']),
-    #                        filter_content=", ".join(settings['filter_content']),
-    #                        ignore_folders=", ".join(settings['ignore_folders']),
-    #                        ignore_files=", ".join(settings['ignore_files']),
-    #                        essential_files=", ".join(settings['essential_files']),
-    #                        openai_api_key=settings['openai_api_key'])
 
 @app.route('/select_folders', methods=['GET'])
 def select_folders():

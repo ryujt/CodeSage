@@ -24,6 +24,7 @@ def load_settings():
     default_settings = {
         'openai_api_key': 'your_openai_api_key', 
         'filter_content': '',
+        'use_question_history': '',
         'extensions': ['.md', '.vue', '.js', '.json', '.css', '.html', '.py', '.pdf', '.java', '.ts', '.jsx', '.tsx', '.php', '.c', '.cpp', '.h', '.cs', '.swift', '.rb', '.go', '.kt', '.sql', '.hpp', '.m', '.mm'], 
         'ignore_folders': ['node_modules', 'cypress', '.gradle', '.idea', 'build', 'test', 'bin', 'dist', '.vscode', '.git', '.github', '.expo'], 
         'ignore_files': ['CodeSage.py', 'SageSettings.json', 'SageQuestions.json', 'SageFolders.json', 'embeddings.jsonl', 'package-lock.json'], 
