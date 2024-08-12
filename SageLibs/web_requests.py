@@ -51,11 +51,11 @@ def summarize_content(question, text):
     user_message = f"""Find and return only the content that is relevant to the question in 'question:' from the 'text:.' 
 If there is no relevant content, return an empty string.
 
-text:
-{text}
-
 question:
 {question}
+
+text:
+{text}
 """
    
     headers = {
