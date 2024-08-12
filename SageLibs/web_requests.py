@@ -48,14 +48,13 @@ def summarize_content(question, text):
     api_key = settings.get('openai_api_key', '')
 
     system_message = "You are an AI assistant specialized in extracting relevant information."
-    user_message = f"""Find and return only the content that is relevant to the question in 'question:' from the 'text:.' 
-If there is no relevant content, return an empty string.
-
-question:
-{question}
+    user_message = f"""Return 'Related' if the content of 'text:' is related to 'question:'.
 
 text:
 {text}
+
+question:
+{question}
 """
    
     headers = {
@@ -77,13 +76,14 @@ text:
     try:
         response = requests.post(CHAT_API_URL, headers=headers, data=data)
         response.raise_for_status()
-        return response.json()['choices'][0]['message']['content']
+
+        return "Related" in response.json()['choices'][0]['message']['content']
     except RequestException as e:
         logging.error(f"Chat API 요청 실패: {str(e)}")
-        return ""
+        return False
     except (KeyError, IndexError) as e:
         logging.error(f"Chat API 응답 처리 오류: {str(e)}")
-        return ""
+        return False
 
 def get_chat_response(user_message):    
     settings = get_settings()

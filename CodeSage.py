@@ -46,13 +46,17 @@ def index():
             if remaining_tokens - item['tokens'] >= 0:
                 if 'filename' in item:  # relevant_docs의 항목
                     if settings['filter_content'] == 'on':
-                        item['content'] = summarize_content(question, item['content'])      
-                    selected_docs.append(item)
+                        if summarize_content(question, item['content']):
+                            selected_docs.append(item)
+                    else:
+                        selected_docs.append(item)
 
                 else:  # relevant_answers의 항목
                     if settings['filter_content'] == 'on':
-                        item['answer'] = summarize_content(question, item['answer'])      
-                    selected_answers.append(item)
+                        if summarize_content(question, item['answer']):
+                            selected_answers.append(item)
+                    else:
+                        selected_answers.append(item)
 
                 remaining_tokens -= item['tokens']
            
