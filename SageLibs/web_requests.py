@@ -77,13 +77,13 @@ question:
         response = requests.post(CHAT_API_URL, headers=headers, data=data)
         response.raise_for_status()
 
-        return "Related" in response.json()['choices'][0]['message']['content']
+        return response.json()['choices'][0]['message']['content']
     except RequestException as e:
         logging.error(f"Chat API 요청 실패: {str(e)}")
-        return False
+        return ""
     except (KeyError, IndexError) as e:
         logging.error(f"Chat API 응답 처리 오류: {str(e)}")
-        return False
+        return ""
 
 def get_chat_response(user_message):    
     settings = get_settings()

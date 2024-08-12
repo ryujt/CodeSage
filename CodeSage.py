@@ -46,30 +46,22 @@ def index():
             if remaining_tokens - item['tokens'] >= 0:
                 if 'filename' in item:  # relevant_docs의 항목
                     if settings['filter_content'] == 'on':
-                        if summarize_content(question, item['content']):
-                            selected_docs.append(item)
-                    else:
-                        selected_docs.append(item)
+                        item['content'] = summarize_content(question, item['content'])
+                    selected_docs.append(item)
 
                 else:  # relevant_answers의 항목
                     if settings['filter_content'] == 'on':
-                        if summarize_content(question, item['answer']):
-                            selected_answers.append(item)
-                    else:
-                        selected_answers.append(item)
+                        item['answer'] = summarize_content(question, item['answer'])
+                    selected_answers.append(item)
 
                 remaining_tokens -= item['tokens']
            
             if remaining_tokens <= 0:
                 break
 
-        print("selected_docs: ", selected_docs)
-        print("selected_answers: ", selected_answers)
-
         user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: \n{json.dumps(selected_answers, ensure_ascii=False)}"
         if len(selected_answers) == 0:
             user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: none"
-        print("-----> ", user_message)
         
         try:
             answer = get_chat_response(user_message)
