@@ -3,9 +3,13 @@ import requests
 import logging
 from requests.exceptions import RequestException
 from .config import get_settings, API_URL, CHAT_API_URL, EMBEDDINGS_MODEL, CHAT_MODEL, CLAUDE_API_URL, CLAUDE_MODEL
+from SageLibs.Translator import translate_lines
 
 def get_embedding(text):
     settings = get_settings()
+
+    if settings['use_translator'] == 'on':    
+        text = translate_lines(text)
 
     headers = {
         "Authorization": f"Bearer {settings['openai_api_key']}",
