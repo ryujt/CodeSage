@@ -20,12 +20,12 @@ def index():
     if request.method == 'POST':
         question = request.form['question']
 
-        if get_setting('use_translator') == 'on':    
-            question = translate_lines(question)        
-        
         logging.debug("질문 임베딩 생성 시작")
         try:
-            question_embedding = get_embedding(question)
+            if get_setting('use_translator') == 'on':    
+                question_embedding = get_embedding(translate_lines(question))
+            else:
+                question_embedding = get_embedding(question)
             logging.debug("질문 임베딩 생성 완료")
         except Exception as e:
             logging.error(f"임베딩 생성 중 오류 발생: {str(e)}", exc_info=True)
