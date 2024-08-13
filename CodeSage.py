@@ -236,9 +236,6 @@ def settings_route():
         flash('설정이 성공적으로 업데이트되었습니다.', 'success')
         return redirect(url_for('settings_route'))
     
-    settings = get_settings()
-    logging.debug(f"현재 설정: {settings}")
-
     template_data = {
         'openai_api_key': get_setting('openai_api_key', ''),
         'filter_content': get_setting('filter_content', ''),
