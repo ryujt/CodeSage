@@ -7,7 +7,7 @@ import logging
 import tiktoken
 import subprocess
 from sklearn.metrics.pairwise import cosine_similarity
-from .config import settings, TOKEN_COUNTER_MODEL, EMBEDDINGS_FILE, SIMILARITY_THRESHOLD
+from .config import get_settings, TOKEN_COUNTER_MODEL, EMBEDDINGS_FILE, SIMILARITY_THRESHOLD
 
 def load_embeddings(file_path):
     embeddings = {}
@@ -19,18 +19,18 @@ def load_embeddings(file_path):
     return embeddings
 
 def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARITY_THRESHOLD, top_k=100):
-    essential_files = {filename: 10 for filename in settings['essential_files']}
+    essential_files = {filename: 10 for filename in get_settings('essential_files')}
 
     similarities = {}
     for filename, data in embeddings.items():
         if filename in essential_files:
             continue
         
-        if not any(filename.endswith(ext) for ext in settings['extensions']):
+        if not any(filename.endswith(ext) for ext in get_settings('extensions')):
             continue
-        if filename in settings['ignore_files']:
+        if filename in get_settings('ignore_files'):
             continue
-        if any(ignore_folder in filename for ignore_folder in settings['ignore_folders']):
+        if any(ignore_folder in filename for ignore_folder in get_settings('ignore_folders')):
             continue
         
         similarity = cosine_similarity([query_embedding], [data['embedding']])[0][0]
@@ -46,9 +46,9 @@ def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARI
 def get_file_paths(folder_path):
     file_paths = []
     for root, dirs, files in os.walk(folder_path):
-        dirs[:] = [d for d in dirs if d not in settings['ignore_folders']]
+        dirs[:] = [d for d in dirs if d not in get_settings('ignore_folders')]
         for file in files:
-            if file not in settings['ignore_files'] and any(file.endswith(ext) for ext in settings['extensions']):
+            if file not in get_settings('ignore_files') and any(file.endswith(ext) for ext in get_settings('extensions')):
                 file_paths.append(os.path.join(root, file))
     return file_paths
 
@@ -179,10 +179,10 @@ def get_changed_files_in_diff(folder, analysis_type):
                 print(f"File ignored due to extensions: {file_name}")
                 continue
             
-            if file_name in settings['ignore_files']:
+            if file_name in get_settings('ignore_files'):
                 print(f"File ignored due to ignore_files: {file_name}")
                 continue
-            if any(ignore_folder in file_dir.split(os.sep) for ignore_folder in settings['ignore_folders']):
+            if any(ignore_folder in file_dir.split(os.sep) for ignore_folder in get_settings('ignore_folders')):
                 print(f"File ignored due to ignore_folders: {file}")
                 continue
 

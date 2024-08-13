@@ -6,13 +6,11 @@ from .config import get_settings, API_URL, CHAT_API_URL, EMBEDDINGS_MODEL, CHAT_
 from SageLibs.Translator import translate_lines
 
 def get_embedding(text):
-    settings = get_settings()
-
-    if settings['use_translator'] == 'on':    
+    if get_settings('use_translator') == 'on':    
         text = translate_lines(text)
 
     headers = {
-        "Authorization": f"Bearer {settings['openai_api_key']}",
+        "Authorization": f"Bearer {get_settings('openai_api_key')}",
         "Content-Type": "application/json"
     }
 
@@ -49,7 +47,6 @@ def get_embedding(text):
         raise ValueError(error_message) from e
     
 def summarize_content(question, text):
-    settings = get_settings()
     api_key = settings.get('openai_api_key', '')
 
     system_message = "You are an AI assistant specialized in extracting relevant information."
@@ -91,8 +88,6 @@ question:
         return ""
 
 def get_chat_response(user_message):    
-    settings = get_settings()
-
     system_message = """You are an AI assistant specialized in answering questions based on provided context. 
     Your task is to:
         1. Analyze the full content of the relevant_docs and relevant_answers provided in the context.
@@ -107,7 +102,7 @@ def get_chat_response(user_message):
     if claude_api_key:
         return get_chat_response_claude(claude_api_key, system_message, user_message)
     else:
-        return get_chat_response_openai(settings['openai_api_key'], system_message, user_message)
+        return get_chat_response_openai(get_settings('openai_api_key'), system_message, user_message)
 
 def get_chat_response_openai(api_key, system_message, user_message):
     logging.debug("OpenAI API 호출 시작")
@@ -141,8 +136,6 @@ def get_chat_response_openai(api_key, system_message, user_message):
 
 def get_chat_response_claude(api_key, system_message, user_message):
     logging.debug("Claude API 호출 시작")
-
-    settings = get_settings()
 
     headers = {
         "x-api-key": api_key,
