@@ -5,7 +5,7 @@ import nltk
 from datetime import datetime 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from SageLibs.config import EMBEDDINGS_FILE
-from SageLibs.config import load_settings, get_settings, update_settings
+from SageLibs.config import load_settings, get_setting, update_settings
 from SageLibs.web_requests import get_embedding, summarize_content, get_chat_response
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
 from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question, get_relevant_answers
@@ -20,7 +20,7 @@ def index():
     if request.method == 'POST':
         question = request.form['question']
 
-        if get_settings('use_translator') == 'on':    
+        if get_setting('use_translator') == 'on':    
             question = translate_lines(question)        
         
         logging.debug("질문 임베딩 생성 시작")
@@ -49,12 +49,12 @@ def index():
         for item in all_items:
             if remaining_tokens - item['tokens'] >= 0:
                 if 'filename' in item:  # relevant_docs의 항목
-                    if get_settings('filter_content') == 'on':
+                    if get_setting('filter_content') == 'on':
                         item['content'] = summarize_content(question, item['content'])
                     selected_docs.append(item)
 
                 else:  # relevant_answers의 항목
-                    if get_settings('filter_content') == 'on':
+                    if get_setting('filter_content') == 'on':
                         item['answer'] = summarize_content(question, item['answer'])
                     selected_answers.append(item)
 
@@ -240,13 +240,13 @@ def settings_route():
     logging.debug(f"현재 설정: {settings}")
 
     template_data = {
-        'openai_api_key': settings.get('openai_api_key', ''),
-        'filter_content': settings.get('filter_content', ''),
-        'use_question_history': settings.get('use_question_history', ''),
-        'extensions': ", ".join(settings.get('extensions', [])),
-        'ignore_folders': ", ".join(settings.get('ignore_folders', [])),
-        'ignore_files': ", ".join(settings.get('ignore_files', [])),
-        'essential_files': ", ".join(settings.get('essential_files', []))
+        'openai_api_key': get_setting('openai_api_key', ''),
+        'filter_content': get_setting('filter_content', ''),
+        'use_question_history': get_setting('use_question_history', ''),
+        'extensions': ", ".join(get_setting('extensions', [])),
+        'ignore_folders': ", ".join(get_setting('ignore_folders', [])),
+        'ignore_files': ", ".join(get_setting('ignore_files', [])),
+        'essential_files': ", ".join(get_setting('essential_files', []))
     }
 
     return render_template('settings.html', **template_data)    

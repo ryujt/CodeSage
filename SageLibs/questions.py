@@ -3,7 +3,7 @@ from flask import flash
 import re
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-from .config import SIMILARITY_THRESHOLD, get_settings
+from .config import SIMILARITY_THRESHOLD, get_setting
 from .web_requests import get_embedding
 from .utilities import hash_content, count_tokens
 
@@ -67,7 +67,7 @@ def maintain_history_limit():
             all_questions = db.all()  # 재조회 필요
 
 def get_relevant_answers(question_embedding, similarity_threshold=SIMILARITY_THRESHOLD, max_tokens=80000):
-    if get_settings('use_question_history') != 'on':
+    if get_setting('use_question_history') != 'on':
         return []
 
     all_questions = db.all()

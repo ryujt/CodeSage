@@ -2,15 +2,15 @@ import json
 import requests
 import logging
 from requests.exceptions import RequestException
-from .config import get_settings, API_URL, CHAT_API_URL, EMBEDDINGS_MODEL, CHAT_MODEL, CLAUDE_API_URL, CLAUDE_MODEL
+from .config import get_setting, API_URL, CHAT_API_URL, EMBEDDINGS_MODEL, CHAT_MODEL, CLAUDE_API_URL, CLAUDE_MODEL
 from SageLibs.Translator import translate_lines
 
 def get_embedding(text):
-    if get_settings('use_translator') == 'on':    
+    if get_setting('use_translator') == 'on':    
         text = translate_lines(text)
 
     headers = {
-        "Authorization": f"Bearer {get_settings('openai_api_key')}",
+        "Authorization": f"Bearer {get_setting('openai_api_key')}",
         "Content-Type": "application/json"
     }
 
@@ -47,7 +47,7 @@ def get_embedding(text):
         raise ValueError(error_message) from e
     
 def summarize_content(question, text):
-    api_key = settings.get('openai_api_key', '')
+    api_key = get_setting('openai_api_key')
 
     system_message = "You are an AI assistant specialized in extracting relevant information."
     user_message = f"""Return 'Related' if the content of 'text:' is related to 'question:'.
@@ -98,11 +98,11 @@ def get_chat_response(user_message):
         6. Refer to the JowFlow.md document for the Jow Flow diagram.
         7. When creating diagrams, use mermaid syntax, except when creating a Jow Flow diagram."""
 
-    claude_api_key = settings.get('claude_api_key', '')
+    claude_api_key = get_setting('claude_api_key', '')
     if claude_api_key:
         return get_chat_response_claude(claude_api_key, system_message, user_message)
     else:
-        return get_chat_response_openai(get_settings('openai_api_key'), system_message, user_message)
+        return get_chat_response_openai(get_setting('openai_api_key'), system_message, user_message)
 
 def get_chat_response_openai(api_key, system_message, user_message):
     logging.debug("OpenAI API 호출 시작")
