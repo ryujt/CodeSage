@@ -67,8 +67,8 @@ def index():
         if len(selected_answers) == 0:
             user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: none"
 
-        with open('./prompt.txt', 'w', encoding='utf-8') as file:
-            file.write(user_message)        
+        # with open('./prompt.txt', 'w', encoding='utf-8') as file:
+        #     file.write(user_message)        
 
         try:
             answer = get_chat_response(user_message)
