@@ -34,22 +34,10 @@ Code Sage는 OpenAI 또는 Claude API를 활용하여 프로젝트 코드베이�
    python CodeSage.py
    ```
 
-5. OpenAI API 키와 선택적으로 Claude API 키를 설정합니다:
-   - `SageSettings.json` 파일을 열고 API 키를 입력합니다:
-     ```json
-     {
-       "openai_api_key": "your_openai_api_key",
-       "claude_api_key": "your_claude_api_key",
-       "extensions": [".md", ".vue", ".js", ".json", ".css", ".html", ".py", ".java", ".ts", ".jsx", ".tsx", ".php", ".c", ".cpp", ".h", ".cs", ".swift", ".rb", ".go", ".kt", ".sql", ".hpp", ".m", ".mm"],
-       "ignore_folders": ["SageLibs", "SageTemplate", "node_modules", "cypress", ".gradle", ".idea", "build", "test", "bin", "dist", ".vscode", ".git", ".github", ".expo"],
-       "ignore_files": ["CodeSage.py", "SageSettings.json", "question_history.json", "embeddings.jsonl", "package-lock.json"],
-       "essential_files": ["README.md", "package.json", "src/router/index.js"]
-     }
-     ```
-   - OpenAI API 키만 입력하셔도 사용할 수 있습니다.
-   - Claude를 사용하고자할 때에는 OpenAI API 키와 Claude API 키를 모두 입력해야합니다. 아직 Claude가 임베딩 관련 API를 제공하지 않기 때문입니다.
+5. 웹 브라우저에서 `http://localhost:8080`에 접속합니다.
 
-6. 웹 브라우저에서 `http://localhost:8080`에 접속합니다.
+6. 설정 버튼을 클릭하시고 OpenAI API 키를 입력합니다.
+   * 기타 설정을 확인 후 `Save Settings` 버튼을 클릭합니다.
 
 7. 폴더 버튼을 클릭하고 분석하고자하는 전체 경로를 입력하여 추가합니다.
    * 입력된 경로 중에 사용할 경로의 체크박스를 선택하여야 합니다.
@@ -62,6 +50,7 @@ Code Sage는 OpenAI 또는 Claude API를 활용하여 프로젝트 코드베이�
 9.  질문을 입력하고 제출하여 AI의 답변을 받습니다.
 
 10. "Analyze from main branch" 또는 "Analyze Recent Commit" 버튼을 사용하여 코드 변경사항을 분석할 수 있습니다.
+   * 코드 변경사항 분석은 하나의 폴더만 지정할 수 있습니다.
 
 ## 설정 변경
 
