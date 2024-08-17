@@ -406,12 +406,27 @@
                 } else if (block.classList.contains('language-jobflow')) {
                     processJobFlowDiagram(block);
                 } else {
-                    hljs.highlightElement(block);
-                    const button = createCopyButton(block.textContent);
-                    block.parentNode.insertBefore(button, block);
+                    processStandardCodeBlock(block);
                 }
             }
+
+            function processStandardCodeBlock(el) {
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.classList.add('codeblock');
+                mermaidDiv.textContent = el.textContent;
     
+                const copyButton = createCopyButton(el.textContent);
+                const containerDiv = document.createElement('div');
+                containerDiv.style.position = 'relative';
+                copyButton.style.position = 'absolute';
+                copyButton.style.top = '5px';
+                copyButton.style.right = '5px';
+    
+                containerDiv.appendChild(mermaidDiv);
+                containerDiv.appendChild(copyButton);
+                el.parentNode.replaceChild(containerDiv, el);
+            }    
+   
             function processMermaidDiagram(el) {
                 const mermaidDiv = document.createElement('div');
                 mermaidDiv.classList.add('mermaid');
