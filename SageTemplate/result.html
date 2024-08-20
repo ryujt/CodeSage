@@ -177,7 +177,6 @@
 
         .answer code {
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-            font-size: 85%;
             background-color: rgba(27, 31, 35, .05);
             border-radius: 3px;
             padding: .2em .4em;
@@ -368,11 +367,11 @@
         document.addEventListener('DOMContentLoaded', function () {
             const answerElement = document.getElementById('answer-content');
             const markdownContent = answerElement.textContent;
-    
+
             const renderer = new marked.Renderer();
             const originalCodeRenderer = renderer.code.bind(renderer);
-            
-            renderer.code = function(code, language) {
+
+            renderer.code = function (code, language) {
                 if (language === 'jobflow') {
                     const svg = JobFlowToSVG.generateSVG(code);
                     const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
@@ -381,10 +380,10 @@
                 }
                 return originalCodeRenderer(code, language);
             };
-            
+
             const htmlContent = marked.parse(markdownContent, { renderer: renderer });
             answerElement.innerHTML = htmlContent;
-    
+
             function createCopyButton(text) {
                 const button = document.createElement('button');
                 button.textContent = 'Copy';
@@ -399,36 +398,53 @@
                 });
                 return button;
             }
-    
+
             function processCodeBlock(block) {
                 if (block.classList.contains('language-mermaid')) {
                     processMermaidDiagram(block);
                 } else if (block.classList.contains('language-jobflow')) {
                     processJobFlowDiagram(block);
                 } else {
-                    hljs.highlightElement(block);
-                    const button = createCopyButton(block.textContent);
-                    block.parentNode.insertBefore(button, block);
+                    processStandardCodeBlock(block);
                 }
             }
-    
-            function processMermaidDiagram(el) {
-                const mermaidDiv = document.createElement('div');
-                mermaidDiv.classList.add('mermaid');
-                mermaidDiv.textContent = el.textContent;
-    
+
+            function processStandardCodeBlock(el) {
+                const codeDiv = document.createElement('div');
+                codeDiv.classList.add('codeblock');
+                codeDiv.innerHTML = `<pre><code class="${el.className}">${el.innerHTML}</code></pre>`;
+
                 const copyButton = createCopyButton(el.textContent);
                 const containerDiv = document.createElement('div');
                 containerDiv.style.position = 'relative';
                 copyButton.style.position = 'absolute';
                 copyButton.style.top = '5px';
                 copyButton.style.right = '5px';
-    
+
+                containerDiv.appendChild(codeDiv);
+                containerDiv.appendChild(copyButton);
+                el.parentNode.replaceChild(containerDiv, el);
+
+                hljs.highlightElement(codeDiv.querySelector('code'));
+            }
+
+            function processMermaidDiagram(el) {
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.classList.add('mermaid');
+                mermaidDiv.textContent = el.textContent;
+
+                const copyButton = createCopyButton(el.textContent);
+                const containerDiv = document.createElement('div');
+                containerDiv.style.position = 'relative';
+                copyButton.style.position = 'absolute';
+                copyButton.style.top = '5px';
+                copyButton.style.right = '5px';
+
                 containerDiv.appendChild(mermaidDiv);
                 containerDiv.appendChild(copyButton);
                 el.parentNode.replaceChild(containerDiv, el);
             }
-    
+
             function processJobFlowDiagram(el) {
                 const jobFlowDiv = document.createElement('div');
                 jobFlowDiv.classList.add('jobflow-diagram');
@@ -436,27 +452,27 @@
                 const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
                 const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}">`);
                 jobFlowDiv.innerHTML = modifiedSvg;
-    
+
                 const copyButton = createCopyButton(el.textContent);
                 copyButton.style.position = 'absolute';
                 copyButton.style.top = '5px';
                 copyButton.style.right = '5px';
-    
+
                 const containerDiv = document.createElement('div');
                 containerDiv.style.position = 'relative';
                 containerDiv.appendChild(jobFlowDiv);
                 containerDiv.appendChild(copyButton);
                 el.parentNode.replaceChild(containerDiv, el);
             }
-    
+
             document.querySelectorAll('pre code').forEach(processCodeBlock);
-    
+
             mermaid.initialize({
                 startOnLoad: true,
                 securityLevel: 'loose',
                 theme: 'default'
             });
-            
+
             const deleteButtons = document.querySelectorAll('.delete-button');
             deleteButtons.forEach(button => {
                 button.addEventListener('click', function (e) {
@@ -476,10 +492,10 @@
                     }
                 });
             });
-    
+
             const copyQuestionBtn = document.querySelector('.copy-question-btn');
             const questionText = document.querySelector('.question-card pre').textContent;
-    
+
             copyQuestionBtn.addEventListener('click', function () {
                 navigator.clipboard.writeText(questionText).then(() => {
                     const originalText = this.textContent;
