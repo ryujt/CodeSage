@@ -29,7 +29,7 @@
 <body>
     <div class="container mt-5">
         <h1 class="mb-4">Select Folders</h1>
-        
+
         <!-- Flash messages -->
         <div id="flash-messages">
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -43,7 +43,21 @@
                 {% endif %}
             {% endwith %}
         </div>
-        
+
+        <div class="mb-4">
+            <h5>Selected Folders:</h5>
+            <div id="selected-folder-list" class="list-group folder-list">
+                {% for folder in selected_folders %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center folder-item">
+                        <div>
+                            <input type="checkbox" id="selected-{{ loop.index }}" value="{{ folder }}" checked>
+                            <label for="selected-{{ loop.index }}">{{ folder }}</label>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <div class="mb-4">
             <h5>Current Folders:</h5>
             <div id="folder-list" class="list-group folder-list">
@@ -58,14 +72,14 @@
                 {% endfor %}
             </div>
         </div>
-        
+
         <form id="add-folder-form" class="mb-3">
             <div class="input-group">
                 <input type="text" id="new-folder" class="form-control" placeholder="Enter folder path" required>
                 <button type="submit" class="btn btn-primary">Add Folder</button>
             </div>
         </form>
-        
+
         <div class="button-container">
             <a href="/" class="btn btn-secondary">Back to Home</a>
         </div>
@@ -88,6 +102,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const addForm = document.getElementById('add-folder-form');
             const folderList = document.getElementById('folder-list');
+            const selectedFolderList = document.getElementById('selected-folder-list');
             const newFolderInput = document.getElementById('new-folder');
 
             addForm.addEventListener('submit', function(e) {
@@ -123,6 +138,7 @@
                         .then(data => {
                             if (data.success) {
                                 e.target.closest('.list-group-item').remove();
+                                updateSelectedFoldersList();
                             } else {
                                 alert('Failed to delete folder: ' + data.message);
                             }
@@ -133,12 +149,49 @@
 
             folderList.addEventListener('change', function(e) {
                 if (e.target.type === 'checkbox') {
+                    updateSelectedFoldersList();
+                    updateCurrentFoldersList();
                     saveSelectedFolders();
                 }
             });
 
-            function saveSelectedFolders() {
+            selectedFolderList.addEventListener('change', function(e) {
+                if (e.target.type === 'checkbox') {
+                    updateCurrentFoldersList();
+                    saveSelectedFolders();
+                    updateSelectedFoldersList();
+                }
+            });
+
+            function updateSelectedFoldersList() {
                 const selectedFolders = Array.from(document.querySelectorAll('#folder-list input[type="checkbox"]:checked'))
+                    .map(checkbox => checkbox.value);
+                
+                selectedFolderList.innerHTML = '';
+                selectedFolders.forEach((folder, index) => {
+                    const listItem = document.createElement('div');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center folder-item';
+                    listItem.innerHTML = `
+                        <div>
+                            <input type="checkbox" id="selected-${index}" value="${folder}" checked>
+                            <label for="selected-${index}">${folder}</label>
+                        </div>
+                    `;
+                    selectedFolderList.appendChild(listItem);
+                });
+            }
+
+            function updateCurrentFoldersList() {
+                const selectedFolders = Array.from(document.querySelectorAll('#selected-folder-list input[type="checkbox"]:checked'))
+                    .map(checkbox => checkbox.value);
+
+                document.querySelectorAll('#folder-list input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = selectedFolders.includes(checkbox.value);
+                });
+            }
+
+            function saveSelectedFolders() {
+                const selectedFolders = Array.from(document.querySelectorAll('#selected-folder-list input[type="checkbox"]:checked'))
                     .map(checkbox => checkbox.value);
 
                 fetch('/update_selected_folders', {
