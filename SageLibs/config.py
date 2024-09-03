@@ -2,7 +2,8 @@ import json
 import logging
 
 EMBEDDINGS_MODEL = 'text-embedding-3-large'
-CHAT_MODEL = 'gpt-4o'
+CHAT_MODEL = 'gpt-4o-2024-08-06'
+# CHAT_MODEL = 'gpt-4o-mini-2024-07-18'
 TOKEN_COUNTER_MODEL = 'gpt-4'
 
 API_URL = "https://api.openai.com/v1/embeddings"

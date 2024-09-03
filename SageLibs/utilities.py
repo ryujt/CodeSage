@@ -161,11 +161,15 @@ def get_changed_files_in_diff(folder, analysis_type):
 
     try:
         output = subprocess.check_output(command, encoding='utf-8').strip().split('\n')
+
+        print(f"command: {command}")
+
         all_changed_files = [file for file in output if file]
 
+        # TODO: 설정에서 확장자를 가져오도록 변경
         programming_extensions = [
-            '.py', '.js', '.html', '.css', '.java', '.c', '.cpp', '.h', 'hpp', '.ts', 
-            '.tsx', '.jsx', '.json', '.xml', '.php', '.rb', '.go', '.rs', 'pas'
+            '.py', '.js', '.java', 'cs', '.c', '.cpp', '.h', '.hpp', '.ts', 
+            '.tsx', '.jsx', '.php', '.rb', '.go', '.rs', '.pas'
         ]
 
         # Filter the changed files based on settings
