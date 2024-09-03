@@ -47,19 +47,19 @@ def translate_lines(lines):
                                 translated_content.append(leading_spaces[i] + translated_line)
                             else:
                                 translated_content.append(translated_line)
-                        print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                        logging.debug(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
                     except Exception as e:
                         logging.error(f"Translation error: {str(e)}")
                         # If an error occurs, add the original text
                         for i, original_line in enumerate(lines_to_translate):
                             translated_content.append(leading_spaces[i] + original_line)
-                        print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Original kept due to error)")
-                    print(f"Original:\n{chr(10).join(lines_to_translate)}")
+                        logging.debug(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Original kept due to error)")
+                    logging.debug(f"Original:\n{chr(10).join(lines_to_translate)}")
                     lines_to_translate = []
                     leading_spaces = []
                 
                 translated_content.append(line)
-                print(f"Line {line_number} (Original): {line}")
+                logging.debug(f"Line {line_number} (Original): {line}")
             else:
                 leading_space = line[:len(line) - len(line.lstrip())]
                 lines_to_translate.append(stripped_line)
@@ -75,19 +75,19 @@ def translate_lines(lines):
                             translated_content.append(leading_spaces[i] + translated_line)
                         else:
                             translated_content.append(translated_line)
-                    print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
+                    logging.debug(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Translated):\n{translated_text}")
                 except Exception as e:
                     logging.error(f"Translation error: {str(e)}")
                     # If an error occurs, add the original text
                     for i, original_line in enumerate(lines_to_translate):
                         translated_content.append(leading_spaces[i] + original_line)
-                    print(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Original kept due to error)")
-                print(f"Original:\n{chr(10).join(lines_to_translate)}")
+                    logging.debug(f"Lines {line_number-len(lines_to_translate)}-{line_number-1} (Original kept due to error)")
+                logging.debug(f"Original:\n{chr(10).join(lines_to_translate)}")
                 lines_to_translate = []
                 leading_spaces = []
             
             translated_content.append(line)
-            print(f"Line {line_number} (Empty)")
+            logging.debug(f"Line {line_number} (Empty)")
 
     # Handle any remaining non-English lines at the end
     if lines_to_translate:
@@ -99,14 +99,14 @@ def translate_lines(lines):
                     translated_content.append(leading_spaces[i] + translated_line)
                 else:
                     translated_content.append(translated_line)
-            print(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Translated):\n{translated_text}")
+            logging.debug(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Translated):\n{translated_text}")
         except Exception as e:
             logging.error(f"Translation error: {str(e)}")
             # If an error occurs, add the original text
             for i, original_line in enumerate(lines_to_translate):
                 translated_content.append(leading_spaces[i] + original_line)
-            print(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Original kept due to error)")
-        print(f"Original:\n{chr(10).join(lines_to_translate)}")
+            logging.debug(f"Lines {line_number-len(lines_to_translate)+1}-{line_number} (Original kept due to error)")
+        logging.debug(f"Original:\n{chr(10).join(lines_to_translate)}")
 
     return '\n'.join(translated_content)
 

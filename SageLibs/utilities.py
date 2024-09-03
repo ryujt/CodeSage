@@ -162,7 +162,7 @@ def get_changed_files_in_diff(folder, analysis_type):
     try:
         output = subprocess.check_output(command, encoding='utf-8').strip().split('\n')
 
-        print(f"command: {command}")
+        logging.debug(f"command: {command}")
 
         all_changed_files = [file for file in output if file]
 
@@ -180,22 +180,22 @@ def get_changed_files_in_diff(folder, analysis_type):
 
             # 확장자 필터링이 처음에 적용되도록 설정
             if not any(file_name.endswith(ext) for ext in programming_extensions):
-                print(f"File ignored due to extensions: {file_name}")
+                logging.debug(f"File ignored due to extensions: {file_name}")
                 continue
             
             if file_name in get_setting('ignore_files'):
-                print(f"File ignored due to ignore_files: {file_name}")
+                logging.debug(f"File ignored due to ignore_files: {file_name}")
                 continue
             if any(ignore_folder in file_dir.split(os.sep) for ignore_folder in get_setting('ignore_folders')):
-                print(f"File ignored due to ignore_folders: {file}")
+                logging.debug(f"File ignored due to ignore_folders: {file}")
                 continue
 
             filtered_changed_files.append(file)
         
         if not filtered_changed_files:
-            print(f"Warning: No changed files found in {folder} for {analysis_type} analysis.")
+            logging.debug(f"Warning: No changed files found in {folder} for {analysis_type} analysis.")
         else:
-            print(f"Found {len(filtered_changed_files)} changed files in {folder} for {analysis_type} analysis.")
+            logging.debug(f"Found {len(filtered_changed_files)} changed files in {folder} for {analysis_type} analysis.")
 
         return filtered_changed_files
     except subprocess.CalledProcessError as e:
@@ -203,10 +203,10 @@ def get_changed_files_in_diff(folder, analysis_type):
    
 def diff_between_branches(folder, analysis_type, specific_file=None):
     branches = get_git_branches(folder)
-    print(f"Branches found: {branches}")
+    logging.debug(f"Branches found: {branches}")
 
     base_branch = 'main' if 'main' in branches else 'master' if 'master' in branches else None
-    print(f"Base branch: {base_branch}")
+    logging.debug(f"Base branch: {base_branch}")
     
     if not base_branch:
         raise Exception(f"{folder}에서 필요한 브랜치(main 또는 master)가 존재하지 않습니다.")
@@ -220,10 +220,10 @@ def diff_between_branches(folder, analysis_type, specific_file=None):
 
     if specific_file:
         specific_file = os.path.join(folder, specific_file)
-        print(f"Specific file for diff: {specific_file}")
+        logging.debug(f"Specific file for diff: {specific_file}")
         command = ['git', '-C', folder, 'diff', diff_command, '--', specific_file]
     else:
-        print("No specific file provided, diffing entire branch.")
+        logging.debug("No specific file provided, diffing entire branch.")
         command = ['git', '-C', folder, 'diff', diff_command]
     
     try:
@@ -235,7 +235,7 @@ def diff_between_branches(folder, analysis_type, specific_file=None):
         # chardet를 사용하여 인코딩을 감지합니다.
         detected = chardet.detect(raw_output)
         encoding = detected['encoding']
-        print(f"Detected encoding: {encoding}")
+        logging.debug(f"Detected encoding: {encoding}")
         # 감지된 인코딩을 사용하여 디코딩합니다.
         output = raw_output.decode(encoding)
 
