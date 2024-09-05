@@ -43,7 +43,6 @@
             padding: 20px;
             min-height: 100vh;
             margin-left: 250px;
-            /* 사이드바 너비만큼 여백 추가 */
         }
 
         /* 네비게이션 바 스타일 */
@@ -111,7 +110,6 @@
         /* 삭제 버튼 스타일 */
         .delete-button {
             color: #dc3545 !important;
-            /* 빨간색 유지 */
             cursor: pointer;
             margin-left: 4px;
         }
@@ -278,6 +276,22 @@
             background-color: #0056b3;
         }
 
+        /* Copy Answer 버튼 스타일 */
+        .copy-answer-btn {
+            background-color: #28a745;
+            color: #ffffff;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .copy-answer-btn:hover {
+            background-color: #218838;
+        }
+
         /* 반응형 디자인 */
         @media (max-width: 768px) {
             #sidebar {
@@ -296,7 +310,8 @@
                 padding: 15px;
             }
 
-            .copy-question-btn {
+            .copy-question-btn,
+            .copy-answer-btn {
                 position: static;
                 margin-top: 10px;
                 display: block;
@@ -348,8 +363,9 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title">Answer</h5>
+                    <button class="btn btn-sm btn-success copy-answer-btn">Copy Answer</button>
                 </div>
                 <div class="card-body">
                     <div class="answer" id="answer-content">{{ answer | e }}</div>
@@ -505,6 +521,22 @@
                     }, 2000);
                 }).catch(err => {
                     console.error('Failed to copy text: ', err);
+                });
+            });
+
+            const copyAnswerBtn = document.querySelector('.copy-answer-btn');
+            const answerContent = document.getElementById('answer-content');
+
+            copyAnswerBtn.addEventListener('click', function () {
+                const answerText = markdownContent;
+                navigator.clipboard.writeText(answerText).then(() => {
+                    const originalText = this.textContent;
+                    this.textContent = 'Copied!';
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy answer: ', err);
                 });
             });
         });
