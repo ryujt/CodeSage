@@ -166,3 +166,4 @@ SageSettings.json
 Embeddings
 prompt.txt
 codesage_env
+.DS_Store
