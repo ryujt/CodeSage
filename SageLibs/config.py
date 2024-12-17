@@ -2,15 +2,15 @@ import json
 import logging
 
 EMBEDDINGS_MODEL = 'text-embedding-3-large'
-CHAT_MODEL = 'gpt-4o-2024-08-06'
-# CHAT_MODEL = 'gpt-4o-mini-2024-07-18'
+CHAT_MODEL = 'gpt-4o'
+# CHAT_MODEL = 'gpt-4o-mini'
 TOKEN_COUNTER_MODEL = 'gpt-4'
 
 API_URL = "https://api.openai.com/v1/embeddings"
 CHAT_API_URL = "https://api.openai.com/v1/chat/completions"
 
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
-CLAUDE_MODEL = 'claude-3-sonnet-20240229' 
+CLAUDE_MODEL = 'claude-3-sonnet' 
 
 EMBEDDINGS_FILE = 'embeddings.jsonl'
 SETTINGS_FILE = 'SageSettings.json'
