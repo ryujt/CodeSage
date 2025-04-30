@@ -404,14 +404,40 @@
                 const button = document.createElement('button');
                 button.textContent = 'Copy';
                 button.className = 'btn btn-sm btn-secondary copy-btn';
-                button.addEventListener('click', function () {
-                    navigator.clipboard.writeText(text).then(() => {
+                button.onclick = async () => {
+                    try {
+                        if (!navigator.clipboard) {
+                            // Fallback for older browsers
+                            const textArea = document.createElement('textarea');
+                            textArea.value = text;
+                            textArea.style.position = 'fixed';
+                            textArea.style.left = '-9999px';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            try {
+                                document.execCommand('copy');
+                                button.textContent = 'Copied!';
+                                setTimeout(() => {
+                                    button.textContent = 'Copy';
+                                }, 2000);
+                            } catch (err) {
+                                console.error('Fallback: Oops, unable to copy', err);
+                                button.textContent = 'Error!';
+                            }
+                            document.body.removeChild(textArea);
+                            return;
+                        }
+
+                        await navigator.clipboard.writeText(text);
                         button.textContent = 'Copied!';
                         setTimeout(() => {
                             button.textContent = 'Copy';
                         }, 2000);
-                    });
-                });
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                        button.textContent = 'Error!';
+                    }
+                };
                 return button;
             }
 
@@ -512,33 +538,82 @@
             const copyQuestionBtn = document.querySelector('.copy-question-btn');
             const questionText = document.querySelector('.question-card pre').textContent;
 
-            copyQuestionBtn.addEventListener('click', function () {
-                navigator.clipboard.writeText(questionText).then(() => {
-                    const originalText = this.textContent;
-                    this.textContent = 'Copied!';
-                    setTimeout(() => {
-                        this.textContent = originalText;
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
+            if (copyQuestionBtn) {
+                copyQuestionBtn.addEventListener('click', async function () {
+                    try {
+                        if (!navigator.clipboard) {
+                            // Fallback for older browsers
+                            const textArea = document.createElement('textarea');
+                            textArea.value = questionText;
+                            textArea.style.position = 'fixed';
+                            textArea.style.left = '-9999px';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            try {
+                                document.execCommand('copy');
+                                this.textContent = 'Copied!';
+                                setTimeout(() => {
+                                    this.textContent = 'Copy Question';
+                                }, 2000);
+                            } catch (err) {
+                                console.error('Fallback: Oops, unable to copy', err);
+                                this.textContent = 'Error!';
+                            }
+                            document.body.removeChild(textArea);
+                            return;
+                        }
+
+                        await navigator.clipboard.writeText(questionText);
+                        this.textContent = 'Copied!';
+                        setTimeout(() => {
+                            this.textContent = 'Copy Question';
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                        this.textContent = 'Error!';
+                    }
                 });
-            });
+            }
 
             const copyAnswerBtn = document.querySelector('.copy-answer-btn');
             const answerContent = document.getElementById('answer-content');
 
-            copyAnswerBtn.addEventListener('click', function () {
-                const answerText = markdownContent;
-                navigator.clipboard.writeText(answerText).then(() => {
-                    const originalText = this.textContent;
-                    this.textContent = 'Copied!';
-                    setTimeout(() => {
-                        this.textContent = originalText;
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy answer: ', err);
+            if (copyAnswerBtn) {
+                copyAnswerBtn.addEventListener('click', async function () {
+                    try {
+                        if (!navigator.clipboard) {
+                            // Fallback for older browsers
+                            const textArea = document.createElement('textarea');
+                            textArea.value = answerContent.textContent;
+                            textArea.style.position = 'fixed';
+                            textArea.style.left = '-9999px';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            try {
+                                document.execCommand('copy');
+                                this.textContent = 'Copied!';
+                                setTimeout(() => {
+                                    this.textContent = 'Copy Answer';
+                                }, 2000);
+                            } catch (err) {
+                                console.error('Fallback: Oops, unable to copy', err);
+                                this.textContent = 'Error!';
+                            }
+                            document.body.removeChild(textArea);
+                            return;
+                        }
+
+                        await navigator.clipboard.writeText(answerContent.textContent);
+                        this.textContent = 'Copied!';
+                        setTimeout(() => {
+                            this.textContent = 'Copy Answer';
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy answer: ', err);
+                        this.textContent = 'Error!';
+                    }
                 });
-            });
+            }
         });
     </script>
 </body>

@@ -91,25 +91,12 @@ def get_chat_response(user_message):
         4. Cite the filenames of relevant documents and the titles of relevant answers in your response.
         5. If appropriate, provide code snippets or examples from the context to support your answer.
         6. Refer to the JowFlow.md document for the Jow Flow diagram.
-        7. When creating diagrams, use mermaid syntax, except when creating a Jow Flow diagram.
-        8. Follow the language and format instructions provided in the message."""
+        7. When creating diagrams, use mermaid syntax, except when creating a Jow Flow diagram."""
 
     try:
         # Parse the JSON message
         message_data = json.loads(user_message)
         
-        # Get instructions
-        instructions = message_data.get('instructions', {})
-        language = instructions.get('language', 'English')
-        format_type = instructions.get('format', 'text')
-        
-        # Update system message with instructions
-        if language != 'English':
-            system_message = f"{system_message}\nPlease reply in {language}."
-        
-        if format_type == 'markdown':
-            system_message = f"{system_message}\nFormat your response in Markdown."
-
         claude_api_key = get_setting('claude_api_key', '')
         if claude_api_key:
             return get_chat_response_claude(claude_api_key, system_message, user_message)
@@ -124,8 +111,7 @@ def get_chat_response(user_message):
 
 def get_chat_response_raw(user_message):
     """Fallback method that uses the original message format"""
-    system_message = """You are an AI assistant specialized in answering questions based on provided context. 
-    Please reply in Korean and format your response in Markdown."""
+    system_message = """You are an AI assistant specialized in answering questions based on provided context."""
     
     claude_api_key = get_setting('claude_api_key', '')
     if claude_api_key:

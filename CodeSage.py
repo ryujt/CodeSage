@@ -62,11 +62,7 @@ def index():
         message_data = {
             "prompt": question,
             "files": {},
-            "previous_answers": [],
-            "instructions": {
-                "language": "Korean",
-                "format": "markdown"
-            }
+            "previous_answers": []
         }
 
         # Add relevant docs to files
@@ -143,11 +139,7 @@ For each item, please provide specific line numbers and suggestions for improvem
                     "files": {
                         f"@{file_name}": diff_output
                     },
-                    "context": relevant_docs,
-                    "instructions": {
-                        "language": "Korean",
-                        "format": "markdown"
-                    }
+                    "context": relevant_docs
                 }
 
                 user_message = json.dumps(message_data, ensure_ascii=False)
