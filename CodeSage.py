@@ -4,13 +4,12 @@ import logging
 import nltk
 from datetime import datetime 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from SageLibs.config import EMBEDDINGS_FILE
+from SageLibs.config import EMBEDDINGS_FILE, TOKEN_CONTEXT_WINDOW
 from SageLibs.config import load_settings, get_setting, update_settings
 from SageLibs.web_requests import get_embedding, summarize_content, get_chat_response
 from SageLibs.utilities import load_embeddings, count_tokens, get_relevant_documents, get_file_paths, read_file, hash_content, get_changed_files_in_diff, diff_between_branches
 from SageLibs.questions import get_all_questions, get_question_by_id, insert_question, delete_question, get_relevant_answers
 from SageLibs.folders import get_all_folders, add_folder, delete_folder, get_selected_folders, update_selected_folders
-from SageLibs.Translator import translate_lines
 
 app = Flask(__name__, template_folder='SageTemplate')
 app.secret_key = 'your_secret_key_here'
@@ -19,13 +18,9 @@ app.secret_key = 'your_secret_key_here'
 def index():
     if request.method == 'POST':
         question = request.form['question']
-
         logging.debug("질문 임베딩 생성 시작")
         try:
-            if get_setting('use_translator') == 'on':    
-                question_embedding = get_embedding(translate_lines(question))
-            else:
-                question_embedding = get_embedding(question)
+            question_embedding = get_embedding(question)
             logging.debug("질문 임베딩 생성 완료")
         except Exception as e:
             logging.error(f"임베딩 생성 중 오류 발생: {str(e)}", exc_info=True)
@@ -37,7 +32,7 @@ def index():
         relevant_docs = get_relevant_documents(get_selected_folders(), question_embedding)
 
         # 토큰 수 제한 및 선택 로직
-        max_tokens = 80000
+        max_tokens = TOKEN_CONTEXT_WINDOW
         remaining_tokens = max_tokens - question_part_token_count
         selected_answers = []
         selected_docs = []
@@ -63,12 +58,28 @@ def index():
             if remaining_tokens <= 0:
                 break
 
-        user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: \n{json.dumps(selected_answers, ensure_ascii=False)}"
-        if len(selected_answers) == 0:
-            user_message = f"Please reply in Korean.\n\nQuestion: {question}\n\nrelevant_docs:\n{json.dumps(selected_docs, ensure_ascii=False)}\n\nrelevant_answers: none"
+        # Format message in JSON structure
+        message_data = {
+            "prompt": question,
+            "files": {},
+            "previous_answers": [],
+            "instructions": {
+                "language": "Korean",
+                "format": "markdown"
+            }
+        }
 
-        # with open('./prompt.txt', 'w', encoding='utf-8') as file:
-        #     file.write(user_message)        
+        # Add relevant docs to files
+        for doc in selected_docs:
+            filename = doc.get('filename', '')
+            if filename:
+                message_data["files"][f"@{filename}"] = doc.get('content', '')
+
+        # Add relevant answers if any
+        if selected_answers:
+            message_data["previous_answers"] = selected_answers
+
+        user_message = json.dumps(message_data, ensure_ascii=False)
 
         try:
             answer = get_chat_response(user_message)
@@ -93,8 +104,7 @@ def analyze_changes(analysis_type):
 
     folder = folders[0]
 
-    question = """Please reply in Korean.
-Analyze the code changes provided in 'Diff:' and refer to the existing code in 'Context:' to generate a detailed report categorized into three sections:
+    analysis_prompt = """Analyze the code changes provided in 'Diff:' and refer to the existing code in 'Context:' to generate a detailed report categorized into three sections:
 
 1. Refactoring targets and potential error-prone areas:
    - Complex or duplicated logic
@@ -126,8 +136,21 @@ For each item, please provide specific line numbers and suggestions for improvem
                 diff_output = diff_between_branches(folder, analysis_type, specific_file=file_name)
                 question_embedding = get_embedding(f"Filename:{file_name}\n\nDiff:\n{diff_output}")
                 relevant_docs = get_relevant_documents([folder], question_embedding)
-                user_message = f"Question: {question}\n\nFilename: {file_name}\n\nDiff:\n{diff_output}\n\nContext:\n{json.dumps(relevant_docs, ensure_ascii=False, indent=2)}"
 
+                # Format message in JSON structure
+                message_data = {
+                    "prompt": analysis_prompt,
+                    "files": {
+                        f"@{file_name}": diff_output
+                    },
+                    "context": relevant_docs,
+                    "instructions": {
+                        "language": "Korean",
+                        "format": "markdown"
+                    }
+                }
+
+                user_message = json.dumps(message_data, ensure_ascii=False)
                 answer = get_chat_response(user_message)
                 combined_answer += f"# File: {file_name}\n\n{answer}\n\n"
 

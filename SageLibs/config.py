@@ -3,8 +3,9 @@ import logging
 
 EMBEDDINGS_MODEL = 'text-embedding-3-large'
 CHAT_MODEL = 'gpt-4o'
-# CHAT_MODEL = 'gpt-4o-mini'
 TOKEN_COUNTER_MODEL = 'gpt-4'
+
+TOKEN_CONTEXT_WINDOW = 100000
 
 API_URL = "https://api.openai.com/v1/embeddings"
 CHAT_API_URL = "https://api.openai.com/v1/chat/completions"
@@ -26,7 +27,6 @@ def load_settings():
         'openai_api_key': 'your_openai_api_key', 
         'filter_content': '',
         'use_question_history': '',
-        "use_translator": '',
         'extensions': ['.md', '.vue', '.js', '.json', '.css', '.html', '.py', '.pdf', '.java', '.ts', '.jsx', '.tsx', '.php', '.c', '.cpp', '.h', '.cs', '.swift', '.rb', '.go', '.kt', '.sql', '.hpp', '.m', '.mm'], 
         'ignore_folders': ['node_modules', 'cypress', '.gradle', '.idea', 'build', 'test', 'bin', 'dist', '.vscode', '.git', '.github', '.expo'], 
         'ignore_files': ['CodeSage.py', 'SageSettings.json', 'SageQuestions.json', 'SageFolders.json', 'embeddings.jsonl', 'package-lock.json'], 
