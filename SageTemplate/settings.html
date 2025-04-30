@@ -13,7 +13,7 @@
 <body>
     <div class="container mt-5">
         <h1 class="mb-4">Code Sage Settings</h1>
-        <form id="settingsForm" method="POST" action="{{ url_for('settings_route') }}">
+        <form id="settingsForm" method="POST" action="{{ url_for('settings.settings_route') }}">
             <div class="mb-3">
                 <label for="apiKey" class="form-label">OpenAI API Key:</label>
                 <input type="text" class="form-control" id="apiKey" name="apiKey" value="{{ openai_api_key }}">
@@ -44,7 +44,7 @@
             </div>
             <button type="submit" class="btn btn-primary">Save Settings</button>
         </form>
-        <a href="/" class="btn btn-secondary mt-3">Back to Home</a>
+        <a href="{{ url_for('index.index') }}" class="btn btn-secondary mt-3">Back to Home</a>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
