@@ -30,6 +30,8 @@
             color: #dc3545;
             margin-left: 4px;
         }
+        .site-title { color: inherit; text-decoration: none; }
+        .site-title:hover { color: inherit; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -37,7 +39,7 @@
         <a href="{{ url_for('settings.settings_route') }}" class="btn btn-outline-secondary settings-button" title="Settings">
             <i class="bi bi-gear"></i>
         </a>
-        <h1 class="mb-4">Code Sage</h1>
+        <a href="{{ url_for('index.index') }}" class="site-title"><h1 class="mb-4">Code Sage</h1></a>
         
         <!-- Flash messages -->
         <div id="flash-messages">

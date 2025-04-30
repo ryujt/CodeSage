@@ -24,11 +24,13 @@
             justify-content: space-between;
             margin-top: 20px;
         }
+        .site-title { color: inherit; text-decoration: none; }
+        .site-title:hover { color: inherit; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Select Folders</h1>
+        <a href="{{ url_for('index.index') }}" class="site-title"><h1 class="mb-4">Select Folders</h1></a>
 
         <!-- Flash messages -->
         <div id="flash-messages">
