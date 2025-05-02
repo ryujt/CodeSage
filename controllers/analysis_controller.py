@@ -9,8 +9,10 @@ from SageLibs.folders import get_selected_folders
 from SageLibs.web_requests import get_embedding, get_chat_response
 from SageLibs.questions import insert_question
 from SageLibs.config import EMBEDDINGS_FILE
+from SageLibs.embedding_utils import chunk_content
+from SageLibs.payload_builder import build_payload
 
-analysis_bp = Blueprint('analysis', __name__)
+analysis_bp = Blueprint('analysis', __name__, url_prefix='/analysis')
 
 @analysis_bp.route('/analyze_changes/<analysis_type>', methods=['POST'])
 def analyze_changes(analysis_type):
@@ -57,11 +59,22 @@ For each item, please provide specific line numbers and suggestions for improvem
                 # Format message in JSON structure
                 message_data = {
                     "prompt": analysis_prompt,
-                    "files": {
-                        f"@{file_name}": diff_output
-                    },
-                    "context": relevant_docs
+                    "context": [],
+                    "previous_answers": []
                 }
+                
+                # Add the diff as a context document
+                message_data["context"].append({
+                    "filename": file_name,
+                    "content": diff_output
+                })
+                
+                # Add relevant docs to context
+                for doc in relevant_docs:
+                    message_data["context"].append({
+                        "filename": doc.get("filename", ""),
+                        "content": doc.get("content", "")
+                    })
 
                 user_message = json.dumps(message_data, ensure_ascii=False)
                 answer = get_chat_response(user_message)
@@ -99,6 +112,13 @@ def extract_embeddings():
         existing_embeddings = load_embeddings(embedding_file)
         file_paths = get_file_paths(folder)
         error_files = []
+        
+        # Group existing embeddings by filename for easier lookup
+        filename_to_embeddings = {}
+        for item in existing_embeddings.values():
+            filename = item.get('filename')
+            if filename and filename not in filename_to_embeddings:
+                filename_to_embeddings[filename] = item
 
         with open(embedding_file, 'w', encoding='utf-8') as f:
             for file_path in file_paths:
@@ -106,22 +126,41 @@ def extract_embeddings():
                     relative_path = os.path.relpath(file_path, start=folder)
                     logging.info(f"Processing {relative_path}")
                     
-                    content = read_file(file_path)
-                    content_hash = hash_content(content)
-
-                    if relative_path in existing_embeddings and existing_embeddings[relative_path]['content_hash'] == content_hash:
-                        file_data = existing_embeddings[relative_path]
-                    else:
-                        logging.info(f"  - Changes detected or new file, generating new embedding")
-                        embedding = get_embedding(content)
-                        file_data = {
-                            "filename": relative_path, 
-                            "content": content,
-                            "content_hash": content_hash,
-                            "embedding": embedding
-                        }
-
-                    f.write(json.dumps(file_data, ensure_ascii=False) + '\n')
+                    try:
+                        content = read_file(file_path)
+                        if not content:
+                            logging.warning(f"Empty content for file {file_path}, skipping")
+                            continue
+                            
+                        content_hash = hash_content(content)
+                        
+                        # Check if file has changed
+                        existing_file = filename_to_embeddings.get(relative_path)
+                        if existing_file and existing_file.get('content_hash') == content_hash:
+                            # File unchanged, use existing embeddings
+                            logging.info(f"  - No changes detected, using existing embeddings")
+                            f.write(json.dumps(existing_file, ensure_ascii=False) + '\n')
+                        else:
+                            # Process file for embedding
+                            logging.info(f"  - Changes detected or new file, generating new embeddings")
+                            chunks = chunk_content(content)
+                            for chunk in chunks:
+                                try:
+                                    embedding = get_embedding(chunk)
+                                    file_data = {
+                                        "filename": relative_path,
+                                        "content": chunk,  # Store only the chunk content
+                                        "content_hash": content_hash,  # Hash of entire file
+                                        "embedding": embedding
+                                    }
+                                    f.write(json.dumps(file_data, ensure_ascii=False) + '\n')
+                                except Exception as e:
+                                    logging.error(f"Error getting embedding for {relative_path}: {str(e)}", exc_info=True)
+                    except UnicodeDecodeError as e:
+                        logging.error(f"Unicode decode error for {file_path}: {str(e)}", exc_info=True)
+                        error_files.append(relative_path)
+                        continue
+                        
                 except Exception as e:
                     logging.error(f"Error processing {file_path}: {str(e)}", exc_info=True)
                     error_files.append(relative_path)

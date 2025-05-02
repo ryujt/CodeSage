@@ -1,11 +1,19 @@
 import json
 import logging
 
+# 로깅 설정
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True  # 기존 설정을 덮어쓰기
+)
+
 EMBEDDINGS_MODEL = 'text-embedding-3-large'
 CHAT_MODEL = 'gpt-4o'
 TOKEN_COUNTER_MODEL = 'gpt-4'
 
 TOKEN_CONTEXT_WINDOW = 100000
+TOKEN_CONTEXT_WINDOW_EMBEDDINGS= 8000
 
 API_URL = "https://api.openai.com/v1/embeddings"
 CHAT_API_URL = "https://api.openai.com/v1/chat/completions"

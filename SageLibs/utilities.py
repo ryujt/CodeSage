@@ -14,8 +14,18 @@ def load_embeddings(file_path):
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
-                data = json.loads(line)
-                embeddings[data['filename']] = data
+                try:
+                    data = json.loads(line)
+                    filename = data.get('filename')
+                    if filename:
+                        # Update - keep all chunks by appending an index to the key
+                        # This ensures we don't overwrite previous chunks
+                        chunk_index = len([k for k in embeddings if k.startswith(filename)])
+                        key = f"{filename}#{chunk_index}" if chunk_index > 0 else filename
+                        embeddings[key] = data
+                except json.JSONDecodeError:
+                    logging.warning(f"Invalid JSON in {file_path}: {line}")
+                    continue
     return embeddings
 
 def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARITY_THRESHOLD, top_k=100):
@@ -75,11 +85,14 @@ def read_file(file_path):
     encodings = [detected['encoding'], 'utf-8', 'euc-kr', 'cp949']
     
     for encoding in encodings:
+        if encoding is None:
+            continue
         try:
             return raw_data.decode(encoding)
         except UnicodeDecodeError:
             continue
     
+    # If all encodings failed, use utf-8 with error replacement
     return raw_data.decode('utf-8', errors='replace')
 
 def hash_content(content):
