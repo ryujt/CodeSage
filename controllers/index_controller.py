@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 import json
 import logging
 from SageLibs.web_requests import get_embedding, summarize_content, get_chat_response
-from SageLibs.utilities import count_tokens
+from SageLibs.utilities import count_tokens, hash_content
 from SageLibs.questions import insert_question, get_all_questions, get_relevant_answers
 from SageLibs.utilities import get_relevant_documents
 from SageLibs.folders import get_selected_folders
@@ -36,19 +36,31 @@ def index():
         remaining_tokens = max_tokens - question_part_token_count
         selected_answers = []
         selected_docs = []
-
         
+        # 중복 콘텐츠 확인을 위한 해시 집합
+        content_hashes = set()
+
         # relevant_answers와 relevant_docs를 유사도 순으로 정렬
         all_items = relevant_answers + relevant_docs
         all_items.sort(key=lambda x: x['similarity'], reverse=True)
         
         for item in all_items:
+            # 콘텐츠 해시 계산
+            content = item.get('content', '')
+            content_hash = hash_content(content)
+            
+            # 이미 처리된 콘텐츠인지 확인
+            if content_hash in content_hashes:
+                logging.info(f"중복 콘텐츠 건너뜀: {item.get('filename', '답변')}")
+                continue
+                
             if remaining_tokens - item['tokens'] >= 0:
                 if 'filename' in item:  # relevant_docs의 항목
                     selected_docs.append(item)
                 else:  # relevant_answers의 항목
                     selected_answers.append(item)
 
+                content_hashes.add(content_hash)
                 remaining_tokens -= item['tokens']
            
             if remaining_tokens <= 0:
