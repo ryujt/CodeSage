@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 {% block content %}
             <div class="card mb-4 question-card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title">Question</h5>
-                    <button class="btn btn-sm btn-secondary copy-question-btn">Copy Question</button>
+                    <button class="btn btn-sm btn-secondary copy-question-btn"><i class="bi bi-clipboard"></i></button>
                 </div>
                 <div class="card-body">
                     <pre class="card-text">{{ question }}</pre>
@@ -12,240 +12,296 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title">Answer</h5>
-                    <button class="btn btn-sm btn-success copy-answer-btn">Copy Answer</button>
+                    <button class="btn btn-sm btn-success copy-answer-btn"><i class="bi bi-clipboard"></i></button>
                 </div>
                 <div class="card-body">
-                    <div class="answer" id="answer-content">{{ answer | e }}</div>
+                    <div class="answer markdown-content" id="answer-content">{{ answer | e }}</div>
                 </div>
             </div>
             <a href="{{ url_for('index.index') }}" class="btn btn-primary mt-3">Ask Another Question</a>
 
+    <link href="{{ url_for('static', filename='css/common.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/github.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://job-flow.s3.ap-northeast-2.amazonaws.com/jobflow.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="{{ url_for('static', filename='js/jobflow.min.js') }}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const answerElement = document.getElementById('answer-content');
-            const markdownContent = answerElement.textContent;
+        // 복사 버튼 생성 함수
+        function createCopyButton(text) {
+            const button = document.createElement('button');
+            button.innerHTML = '<i class="bi bi-clipboard"></i>';
+            button.className = 'copy-button';
+            button.addEventListener('click', function () {
+                navigator.clipboard.writeText(text).then(() => {
+                    button.innerHTML = '<i class="bi bi-check2"></i>';
+                    setTimeout(() => {
+                        button.innerHTML = '<i class="bi bi-clipboard"></i>';
+                    }, 2000);
+                });
+            });
+            return button;
+        }
 
+        // 코드 블록 처리 함수
+        function processCodeBlock(block) {
+            if (block.classList.contains('language-mermaid')) {
+                processMermaidDiagram(block);
+            } else if (block.classList.contains('language-jobflow')) {
+                processJobFlowDiagram(block);
+            } else if (block.classList.contains('language-navigation')) {
+                processNavigationDiagram(block);
+            } else {
+                processStandardCodeBlock(block);
+            }
+        }
+
+        // 표준 코드 블록 처리
+        function processStandardCodeBlock(el) {
+            const pre = el.parentNode;
+            const codeContent = el.textContent;
+            
+            // Create new code container instead of reusing the pre element
+            const codeDiv = document.createElement('div');
+            codeDiv.className = 'codeblock';
+            codeDiv.innerHTML = `<pre><code class="${el.className}">${el.innerHTML}</code></pre>`;
+            
+            // Add copy button in a header
+            const copyButton = createCopyButton(codeContent);
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'mb-2 flex justify-end';
+            headerDiv.appendChild(copyButton);
+            
+            // Create container and assemble
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'my-6 relative';
+            containerDiv.appendChild(headerDiv);
+            containerDiv.appendChild(codeDiv);
+            
+            // Replace the original pre element
+            pre.parentNode.replaceChild(containerDiv, pre);
+            
+            // Highlight the new code element
+            hljs.highlightElement(codeDiv.querySelector('code'));
+        }
+
+        // Mermaid 다이어그램 처리
+        function processMermaidDiagram(el) {
+            const pre = el.parentNode;
+            const mermaidDiv = document.createElement('div');
+            mermaidDiv.classList.add('mermaid', 'my-6');
+            mermaidDiv.textContent = el.textContent;
+            
+            const copyButton = createCopyButton(el.textContent);
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'mb-2 flex justify-end';
+            headerDiv.appendChild(copyButton);
+            
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'my-6 relative';
+            containerDiv.appendChild(headerDiv);
+            containerDiv.appendChild(mermaidDiv);
+            pre.parentNode.replaceChild(containerDiv, pre);
+        }
+
+        // Navigation 다이어그램 처리
+        function processNavigationDiagram(el) {
+            const pre = el.parentNode;
+            const navInput = el.textContent;
+            const mermaidCode = convertNavigationToMermaid(navInput);
+            const navDiv = document.createElement('div');
+            navDiv.classList.add('mermaid', 'my-6');
+            navDiv.textContent = mermaidCode;
+            
+            const copyButton = createCopyButton(navInput);
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'mb-2 flex justify-end';
+            headerDiv.appendChild(copyButton);
+            
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'my-6 relative';
+            containerDiv.appendChild(headerDiv);
+            containerDiv.appendChild(navDiv);
+            pre.parentNode.replaceChild(containerDiv, pre);
+        }
+        
+        // JobFlow 다이어그램 처리
+        function processJobFlowDiagram(el) {
+            const pre = el.parentNode;
+            const jobFlowDiv = document.createElement('div');
+            jobFlowDiv.classList.add('jobflow-diagram', 'my-6');
+            const svg = JobFlowToSVG.generateSVG(el.textContent);
+            const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
+            const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}" class="w-full">`);
+            jobFlowDiv.innerHTML = modifiedSvg;
+            
+            const copyButton = createCopyButton(el.textContent);
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'mb-2 flex justify-end';
+            headerDiv.appendChild(copyButton);
+            
+            const containerDiv = document.createElement('div');
+            containerDiv.className = 'my-6 relative';
+            containerDiv.appendChild(headerDiv);
+            containerDiv.appendChild(jobFlowDiv);
+            pre.parentNode.replaceChild(containerDiv, pre);
+        }
+
+        // Navigation 다이어그램을 Mermaid로 변환
+        function convertNavigationToMermaid(input) {
+            let mermaidCode = 'graph LR\n';
+            let nodeMap = {};
+            let nodeStyles = [];
+            let nodeCounter = 65;
+            const lines = input.split('\n');
+            lines.forEach(line => {
+                line = line.trim();
+                if (line === '') return;
+                // Simplified regex pattern to avoid linter errors
+                const parts = line.split('-->');
+                if (parts.length >= 2) {
+                    let fromNode = parts[0].trim();
+                    let toNodeParts = parts[1].trim().split(':');
+                    let toNode = toNodeParts[0].trim();
+                    let label = toNodeParts.length > 1 ? toNodeParts[1].trim() : '';
+                    
+                    // Helper function to get node identifier
+                    function getNodeIdentifier(nodeName) {
+                        let isRounded = false;
+                        if (nodeName.startsWith('(') && nodeName.endsWith(')')) {
+                            nodeName = nodeName.substring(1, nodeName.length - 1);
+                            isRounded = true;
+                        }
+                        let identifier = nodeMap[nodeName];
+                        if (!identifier) {
+                            identifier = String.fromCharCode(nodeCounter++);
+                            nodeMap[nodeName] = identifier;
+                            let nodeShape = isRounded ? `(${nodeName})` : `[${nodeName}]`;
+                            mermaidCode += `    ${identifier}${nodeShape}\n`;
+                            if (!isRounded) {
+                                nodeStyles.push(`    style ${identifier} fill:#bbf,stroke:#333,stroke-width:2px`);
+                            }
+                        }
+                        return identifier;
+                    }
+                    
+                    const fromId = getNodeIdentifier(fromNode);
+                    const toId = getNodeIdentifier(toNode);
+                    
+                    if (label) {
+                        mermaidCode += `    ${fromId} -->|${label}| ${toId}\n`;
+                    } else {
+                        mermaidCode += `    ${fromId} --> ${toId}\n`;
+                    }
+                }
+            });
+            
+            if (nodeStyles.length > 0) {
+                mermaidCode += '\n' + nodeStyles.join('\n');
+            }
+            
+            return mermaidCode;
+        }
+
+        // 마크다운 렌더링 함수
+        function renderMarkdown(markdownContent) {
             const renderer = new marked.Renderer();
             const originalCodeRenderer = renderer.code.bind(renderer);
-
+            
             renderer.code = function (code, language) {
                 if (language === 'jobflow') {
                     const svg = JobFlowToSVG.generateSVG(code);
                     const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
-                    const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}">`);
-                    return `<div class="jobflow-diagram">${modifiedSvg}</div>`;
+                    const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}" class="w-full">`);
+                    return `<div class="jobflow-diagram-container">
+                        <div class="mb-2 flex justify-end">
+                            <button class="copy-button" onclick="this.innerHTML='<i class=\\"bi bi-check2\\"></i>'; navigator.clipboard.writeText(\`${code.replace(/`/g, '\\`')}\`); setTimeout(() => { this.innerHTML='<i class=\\"bi bi-clipboard\\"></i>'; }, 2000);"><i class="bi bi-clipboard"></i></button>
+                        </div>
+                        <div class="jobflow-diagram my-6">${modifiedSvg}</div>
+                    </div>`;
                 }
                 return originalCodeRenderer(code, language);
             };
-
+            
+            // Marked 설정
             marked.setOptions({
                 renderer: renderer,
-                highlight: function (code, language) {
-                    if (language === 'mermaid' || language === 'jobflow') {
+                highlight: function(code, language) {
+                    if (language === 'mermaid' || language === 'jobflow' || language === 'navigation') {
                         return code;
                     }
-                    const validLanguage = hljs.getLanguage(language) ? language : 'plaintext';
-                    return hljs.highlight(code, { language: validLanguage }).value;
-                },
-                langPrefix: 'language-'
-            });
-
-            answerElement.innerHTML = marked.parse(markdownContent);
-
-            function createCopyButton(text) {
-                const button = document.createElement('button');
-                button.textContent = 'Copy';
-                button.className = 'copy-btn btn-sm';
-                button.onclick = async function () {
-                    try {
-                        if (!navigator.clipboard) {
-                            // Fallback for older browsers
-                            const textArea = document.createElement('textarea');
-                            textArea.value = text;
-                            textArea.style.position = 'fixed';
-                            textArea.style.left = '-9999px';
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            try {
-                                document.execCommand('copy');
-                                button.textContent = 'Copied!';
-                                setTimeout(() => {
-                                    button.textContent = 'Copy';
-                                }, 2000);
-                            } catch (err) {
-                                console.error('Fallback: Oops, unable to copy', err);
-                                button.textContent = 'Error!';
-                            }
-                            document.body.removeChild(textArea);
-                            return;
-                        }
-
-                        await navigator.clipboard.writeText(text);
-                        button.textContent = 'Copied!';
-                        setTimeout(() => {
-                            button.textContent = 'Copy';
-                        }, 2000);
-                    } catch (err) {
-                        console.error('Failed to copy text: ', err);
-                        button.textContent = 'Error!';
+                    if (language && typeof hljs !== 'undefined' && hljs.getLanguage(language)) {
+                        return hljs.highlight(code, { language }).value;
                     }
-                };
-                return button;
-            }
-
-            function processCodeBlock(block) {
-                if (block.classList.contains('language-mermaid')) {
-                    processMermaidDiagram(block);
-                } else if (block.classList.contains('language-jobflow')) {
-                    processJobFlowDiagram(block);
-                } else {
-                    processStandardCodeBlock(block);
-                }
-            }
-
-            function processStandardCodeBlock(el) {
-                const codeDiv = document.createElement('div');
-                codeDiv.classList.add('codeblock');
-                codeDiv.innerHTML = `<pre><code class="${el.className}">${el.innerHTML}</code></pre>`;
-
-                const copyButton = createCopyButton(el.textContent);
-                const containerDiv = document.createElement('div');
-                containerDiv.style.position = 'relative';
-                copyButton.style.position = 'absolute';
-                copyButton.style.top = '5px';
-                copyButton.style.right = '5px';
-
-                containerDiv.appendChild(codeDiv);
-                containerDiv.appendChild(copyButton);
-                el.parentNode.replaceChild(containerDiv, el);
-
-                hljs.highlightElement(codeDiv.querySelector('code'));
-            }
-
-            function processMermaidDiagram(el) {
-                const mermaidDiv = document.createElement('div');
-                mermaidDiv.classList.add('mermaid');
-                mermaidDiv.textContent = el.textContent;
-
-                const copyButton = createCopyButton(el.textContent);
-                const containerDiv = document.createElement('div');
-                containerDiv.style.position = 'relative';
-                copyButton.style.position = 'absolute';
-                copyButton.style.top = '5px';
-                copyButton.style.right = '5px';
-
-                containerDiv.appendChild(mermaidDiv);
-                containerDiv.appendChild(copyButton);
-                el.parentNode.replaceChild(containerDiv, el);
-            }
-
-            function processJobFlowDiagram(el) {
-                const jobFlowDiv = document.createElement('div');
-                jobFlowDiv.classList.add('jobflow-diagram');
-                const svg = JobFlowToSVG.generateSVG(el.textContent);
-                const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
-                const modifiedSvg = svg.replace(/<svg[^>]*>/, `<svg viewBox="${viewBox}">`);
-                jobFlowDiv.innerHTML = modifiedSvg;
-
-                const copyButton = createCopyButton(el.textContent);
-                copyButton.style.position = 'absolute';
-                copyButton.style.top = '5px';
-                copyButton.style.right = '5px';
-
-                const containerDiv = document.createElement('div');
-                containerDiv.style.position = 'relative';
-                containerDiv.appendChild(jobFlowDiv);
-                containerDiv.appendChild(copyButton);
-                el.parentNode.replaceChild(containerDiv, el);
-            }
-
-            document.querySelectorAll('pre code').forEach(processCodeBlock);
-
-            mermaid.initialize({
-                startOnLoad: true,
-                securityLevel: 'loose',
-                theme: 'default'
+                    return typeof hljs !== 'undefined' ? hljs.highlightAuto(code).value : code;
+                },
+                langPrefix: 'language-',
+                breaks: true,
+                gfm: true
             });
+            
+            return marked.parse(markdownContent);
+        }
 
+        document.addEventListener('DOMContentLoaded', function () {
+            // Mermaid 초기화
+            if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({
+                    startOnLoad: true,
+                    theme: 'default',
+                    securityLevel: 'loose'
+                });
+            }
+            
+            // 답변 렌더링
+            const answerElement = document.getElementById('answer-content');
+            const markdownContent = answerElement.textContent;
+            answerElement.innerHTML = renderMarkdown(markdownContent);
+            
+            // 코드 블록 처리
+            document.querySelectorAll('pre code').forEach(processCodeBlock);
+            
+            // 질문 복사 버튼
             const copyQuestionBtn = document.querySelector('.copy-question-btn');
             const questionText = document.querySelector('.question-card pre').textContent;
 
             if (copyQuestionBtn) {
                 copyQuestionBtn.addEventListener('click', async function () {
                     try {
-                        if (!navigator.clipboard) {
-                            // Fallback for older browsers
-                            const textArea = document.createElement('textarea');
-                            textArea.value = questionText;
-                            textArea.style.position = 'fixed';
-                            textArea.style.left = '-9999px';
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            try {
-                                document.execCommand('copy');
-                                this.textContent = 'Copied!';
-                                setTimeout(() => {
-                                    this.textContent = 'Copy Question';
-                                }, 2000);
-                            } catch (err) {
-                                console.error('Fallback: Oops, unable to copy', err);
-                                this.textContent = 'Error!';
-                            }
-                            document.body.removeChild(textArea);
-                            return;
-                        }
-
                         await navigator.clipboard.writeText(questionText);
-                        this.textContent = 'Copied!';
+                        this.innerHTML = '<i class="bi bi-check2"></i>';
+                        this.classList.add('bg-success');
+                        this.classList.remove('btn-secondary');
                         setTimeout(() => {
-                            this.textContent = 'Copy Question';
+                            this.innerHTML = '<i class="bi bi-clipboard"></i>';
+                            this.classList.remove('bg-success');
+                            this.classList.add('btn-secondary');
                         }, 2000);
                     } catch (err) {
                         console.error('Failed to copy text: ', err);
-                        this.textContent = 'Error!';
+                        this.innerHTML = '<i class="bi bi-x-lg"></i>';
                     }
                 });
             }
 
+            // 답변 복사 버튼
             const copyAnswerBtn = document.querySelector('.copy-answer-btn');
-            const answerContent = document.getElementById('answer-content');
-
+            
             if (copyAnswerBtn) {
                 copyAnswerBtn.addEventListener('click', async function () {
                     try {
-                        if (!navigator.clipboard) {
-                            // Fallback for older browsers
-                            const textArea = document.createElement('textarea');
-                            textArea.value = answerContent.textContent;
-                            textArea.style.position = 'fixed';
-                            textArea.style.left = '-9999px';
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            try {
-                                document.execCommand('copy');
-                                this.textContent = 'Copied!';
-                                setTimeout(() => {
-                                    this.textContent = 'Copy Answer';
-                                }, 2000);
-                            } catch (err) {
-                                console.error('Fallback: Oops, unable to copy', err);
-                                this.textContent = 'Error!';
-                            }
-                            document.body.removeChild(textArea);
-                            return;
-                        }
-
-                        await navigator.clipboard.writeText(answerContent.textContent);
-                        this.textContent = 'Copied!';
+                        await navigator.clipboard.writeText(markdownContent);
+                        this.innerHTML = '<i class="bi bi-check2"></i>';
+                        this.classList.add('bg-success');
+                        this.classList.remove('btn-success');
                         setTimeout(() => {
-                            this.textContent = 'Copy Answer';
+                            this.innerHTML = '<i class="bi bi-clipboard"></i>';
+                            this.classList.remove('bg-success');
+                            this.classList.add('btn-success');
                         }, 2000);
                     } catch (err) {
                         console.error('Failed to copy answer: ', err);
-                        this.textContent = 'Error!';
+                        this.innerHTML = '<i class="bi bi-x-lg"></i>';
                     }
                 });
             }
