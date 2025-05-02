@@ -3,12 +3,8 @@ import requests
 import logging
 from requests.exceptions import RequestException
 from .config import get_setting, API_URL, CHAT_API_URL, EMBEDDINGS_MODEL, CHAT_MODEL, CLAUDE_API_URL, CLAUDE_MODEL
-from SageLibs.Translator import translate_lines
 
 def get_embedding(text):
-    if get_setting('use_translator') == 'on':    
-        text = translate_lines(text)
-
     headers = {
         "Authorization": f"Bearer {get_setting('openai_api_key')}",
         "Content-Type": "application/json"
@@ -50,14 +46,13 @@ def summarize_content(question, text):
     api_key = get_setting('openai_api_key')
 
     system_message = "You are an AI assistant specialized in extracting relevant information."
-    user_message = f"""Return 'Related' if the content of 'text:' is related to 'question:'.
-
-text:
-{text}
-
-question:
-{question}
-"""
+    user_message = {
+        "prompt": "Return 'Related' if the content of 'text:' is related to 'question:'.",
+        "files": {
+            "text": text,
+            "question": question
+        }
+    }
    
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -66,11 +61,11 @@ question:
 
     messages = [
         {"role": "system", "content": system_message},
-        {"role": "user", "content": user_message}
+        {"role": "user", "content": json.dumps(user_message, ensure_ascii=False)}
     ]
 
     data = json.dumps({
-        "model": "gpt-4o-mini",
+        "model": CHAT_MODEL,
         "messages": messages,
         "temperature": 0
     })
@@ -98,6 +93,26 @@ def get_chat_response(user_message):
         6. Refer to the JowFlow.md document for the Jow Flow diagram.
         7. When creating diagrams, use mermaid syntax, except when creating a Jow Flow diagram."""
 
+    try:
+        # Parse the JSON message
+        message_data = json.loads(user_message)
+        
+        claude_api_key = get_setting('claude_api_key', '')
+        if claude_api_key:
+            return get_chat_response_claude(claude_api_key, system_message, user_message)
+        else:
+            return get_chat_response_openai(get_setting('openai_api_key'), system_message, user_message)
+    except json.JSONDecodeError:
+        logging.warning("Invalid JSON format in user message, falling back to raw message handling")
+        return get_chat_response_raw(user_message)
+    except Exception as e:
+        logging.error(f"Error processing message: {str(e)}")
+        return get_chat_response_raw(user_message)
+
+def get_chat_response_raw(user_message):
+    """Fallback method that uses the original message format"""
+    system_message = """You are an AI assistant specialized in answering questions based on provided context."""
+    
     claude_api_key = get_setting('claude_api_key', '')
     if claude_api_key:
         return get_chat_response_claude(claude_api_key, system_message, user_message)
@@ -179,7 +194,7 @@ def get_chat_response_ollama(message):
         "Content-Type": "application/json"
     }
     data = json.dumps({
-        "model": "gemma2",
+        "model": "gemma3",
         "prompt": message,
         "stream": False
     })

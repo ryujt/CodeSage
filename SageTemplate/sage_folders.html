@@ -24,11 +24,13 @@
             justify-content: space-between;
             margin-top: 20px;
         }
+        .site-title { color: inherit; text-decoration: none; }
+        .site-title:hover { color: inherit; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Select Folders</h1>
+        <a href="{{ url_for('index.index') }}" class="site-title"><h1 class="mb-4">Select Folders</h1></a>
 
         <!-- Flash messages -->
         <div id="flash-messages">
@@ -81,7 +83,7 @@
         </form>
 
         <div class="button-container">
-            <a href="/" class="btn btn-secondary">Back to Home</a>
+            <a href="{{ url_for('index.index') }}" class="btn btn-secondary">Back to Home</a>
         </div>
     </div>
 
@@ -109,7 +111,7 @@
                 e.preventDefault();
                 const folder = newFolderInput.value.trim();
                 if (folder) {
-                    fetch('/add_folder', {
+                    fetch('{{ url_for("folders.add_folder_route") }}', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({folder: folder}),
@@ -129,7 +131,7 @@
                 if (e.target.classList.contains('delete-button')) {
                     const folder = e.target.getAttribute('data-folder');
                     if (confirm('Are you sure you want to delete this folder?')) {
-                        fetch('/delete_folder', {
+                        fetch('{{ url_for("folders.delete_folder_route") }}', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({folder: folder}),
@@ -194,7 +196,7 @@
                 const selectedFolders = Array.from(document.querySelectorAll('#selected-folder-list input[type="checkbox"]:checked'))
                     .map(checkbox => checkbox.value);
 
-                fetch('/update_selected_folders', {
+                fetch('{{ url_for("folders.update_selected_folders_route") }}', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({selectedFolders: selectedFolders}),

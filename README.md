@@ -34,7 +34,7 @@ Code Sage는 OpenAI 또는 Claude API를 활용하여 프로젝트 코드베이�
 
 4. 애플리케이션을 실행합니다:
    ```
-   python CodeSage.py
+   python app.py
    ```
 
 5. 웹 브라우저에서 `http://localhost:8080`에 접속합니다.
@@ -95,7 +95,7 @@ Docker를 사용하면 Code Sage를 간단하게 배포하고 실행할 수 있�
 
 ## 주요 컴포넌트
 
-- `CodeSage.py`: 메인 애플리케이션 파일
+- `app.py`: 메인 애플리케이션 파일
 - `SageLibs/`: 핵심 기능을 포함하는 라이브러리 폴더
   - `config.py`: 설정 관리
   - `web_requests.py`: API 요청 처리
@@ -110,7 +110,7 @@ Docker를 사용하면 Code Sage를 간단하게 배포하고 실행할 수 있�
 
 Code Sage의 기능을 확장하거나 수정하려면 다음 파일을 참조하세요:
 
-- 새로운 API 엔드포인트 추가: `CodeSage.py`
+- 새로운 API 엔드포인트 추가: `app.py`
 - 임베딩 생성 로직 수정: `utilities.py`의 `get_embedding` 함수
 - 질문 처리 로직 변경: `questions.py`
 - AI 모델 응답 처리 수정: `web_requests.py`의 `get_chat_response` 함수

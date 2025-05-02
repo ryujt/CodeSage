@@ -30,14 +30,16 @@
             color: #dc3545;
             margin-left: 4px;
         }
+        .site-title { color: inherit; text-decoration: none; }
+        .site-title:hover { color: inherit; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="container mt-5 position-relative">
-        <a href="/settings" class="btn btn-outline-secondary settings-button" title="Settings">
+        <a href="{{ url_for('settings.settings_route') }}" class="btn btn-outline-secondary settings-button" title="Settings">
             <i class="bi bi-gear"></i>
         </a>
-        <h1 class="mb-4">Code Sage</h1>
+        <a href="{{ url_for('index.index') }}" class="site-title"><h1 class="mb-4">Code Sage</h1></a>
         
         <!-- Flash messages -->
         <div id="flash-messages">
@@ -59,7 +61,7 @@
                 <div class="list-group history">
                     {% for item in questions %}
                         <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                            <a href="{{ url_for('show_question', question_id=item.doc_id) }}" class="flex-grow-1">{{ item.title }}</a>
+                            <a href="{{ url_for('question.show_question', question_id=item.doc_id) }}" class="flex-grow-1">{{ item.title }}</a>
                             <i class="bi bi-trash delete-button" data-question-id="{{ item.doc_id }}"></i>
                         </div>
                     {% endfor %}
@@ -69,15 +71,15 @@
             <div class="col-md-8">
                 <div class="btn-container">
                     <!-- Extract Embeddings 버튼 -->
-                    <form action="/extract_embeddings" method="POST">
+                    <form action="{{ url_for('analysis.extract_embeddings') }}" method="POST">
                         <button type="submit" class="btn btn-secondary">Refresh Embeddings</button>
                     </form>
                     <!-- Analyze Main Changes 버튼 -->
-                    <form action="/analyze_changes/main" method="POST">
+                    <form action="{{ url_for('analysis.analyze_changes', analysis_type='main') }}" method="POST">
                         <button type="submit" class="btn btn-primary">Analyze from main branch</button>
                     </form>
                     <!-- Analyze Recent Commit 버튼 -->
-                    <form action="/analyze_changes/recent" method="POST">
+                    <form action="{{ url_for('analysis.analyze_changes', analysis_type='recent') }}" method="POST">
                         <button type="submit" class="btn btn-info">Analyze Recent Commit</button>
                     </form>
                 </div>                
@@ -117,7 +119,7 @@
                     e.preventDefault();
                     const questionId = this.getAttribute('data-question-id');
                     if (confirm('Are you sure you want to delete this question?')) {
-                        fetch(`/delete_question/${questionId}`, { method: 'POST' })
+                        fetch(`{{ url_for('question.delete_question_route', question_id=0) }}`.replace('0', questionId), { method: 'POST' })
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
