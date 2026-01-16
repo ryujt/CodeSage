@@ -7,3 +7,5 @@ tiktoken==0.5.1
 chardet==5.2.0
 PyPDF2==3.0.1
 tinydb==4.8.0
+sentence-transformers>=3.0.0
+rank-bm25>=0.2.2

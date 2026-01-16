@@ -53,8 +53,9 @@ For each item, please provide specific line numbers and suggestions for improvem
             try:
                 logging.debug(f"Processing changes for file: {file_name}")
                 diff_output = diff_between_branches(folder, analysis_type, specific_file=file_name)
-                question_embedding = get_embedding(f"Filename:{file_name}\n\nDiff:\n{diff_output}")
-                relevant_docs = get_relevant_documents([folder], question_embedding)
+                query_text = f"Filename:{file_name}\n\nDiff:\n{diff_output}"
+                question_embedding = get_embedding(query_text)
+                relevant_docs = get_relevant_documents([folder], question_embedding, query_text=query_text)
 
                 # Format message in JSON structure
                 message_data = {
