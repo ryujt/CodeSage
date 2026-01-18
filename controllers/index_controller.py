@@ -26,7 +26,7 @@ def index():
         
         question_part_token_count = count_tokens(question)
         relevant_answers = get_relevant_answers(question_embedding)
-        relevant_docs = get_relevant_documents(get_selected_folders(), question_embedding)
+        relevant_docs = get_relevant_documents(get_selected_folders(), question_embedding, query_text=question)
 
         logging.info(f"relevant_answers: {len(relevant_answers)}")
         logging.info(f"relevant_docs: {len(relevant_docs)}")

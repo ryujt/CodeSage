@@ -26,19 +26,32 @@ SETTINGS_FILE = 'SageSettings.json'
 
 SIMILARITY_THRESHOLD = 0.30
 
+USE_RERANKER = True
+RERANKER_MODEL = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
+RERANKER_TOP_K = 20
+
+USE_HYBRID_SEARCH = True
+BM25_WEIGHT = 0.3
+SEMANTIC_WEIGHT = 0.7
+
+CHUNK_OVERLAP_TOKENS = 200
+
 settings = {}
 
 def load_settings():
     global settings
     
     default_settings = {
-        'openai_api_key': 'your_openai_api_key', 
+        'openai_api_key': 'your_openai_api_key',
         'filter_content': '',
         'use_question_history': '',
-        'extensions': ['.md', '.vue', '.js', '.json', '.css', '.html', '.py', '.pdf', '.java', '.ts', '.jsx', '.tsx', '.php', '.c', '.cpp', '.h', '.cs', '.swift', '.rb', '.go', '.kt', '.sql', '.hpp', '.m', '.mm'], 
-        'ignore_folders': ['node_modules', 'cypress', '.gradle', '.idea', 'build', 'test', 'bin', 'dist', '.vscode', '.git', '.github', '.expo'], 
-        'ignore_files': ['CodeSage.py', 'SageSettings.json', 'SageQuestions.json', 'SageFolders.json', 'embeddings.jsonl', 'package-lock.json'], 
-        'essential_files': ['JobFlow.md']
+        'extensions': ['.md', '.vue', '.js', '.json', '.css', '.html', '.py', '.pdf', '.java', '.ts', '.jsx', '.tsx', '.php', '.c', '.cpp', '.h', '.cs', '.swift', '.rb', '.go', '.kt', '.sql', '.hpp', '.m', '.mm'],
+        'ignore_folders': ['node_modules', 'cypress', '.gradle', '.idea', 'build', 'test', 'bin', 'dist', '.vscode', '.git', '.github', '.expo'],
+        'ignore_files': ['CodeSage.py', 'SageSettings.json', 'SageQuestions.json', 'SageFolders.json', 'embeddings.jsonl', 'package-lock.json'],
+        'essential_files': ['JobFlow.md'],
+        'use_reranker': True,
+        'use_hybrid_search': True,
+        'chunk_overlap_tokens': 200
     }
     
     try:

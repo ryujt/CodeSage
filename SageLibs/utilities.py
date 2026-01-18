@@ -28,29 +28,62 @@ def load_embeddings(file_path):
                     continue
     return embeddings
 
-def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARITY_THRESHOLD, top_k=100):
+def find_most_similar(query_embedding, embeddings, similarity_threshold=SIMILARITY_THRESHOLD, top_k=100, query_text=None):
     essential_files = {filename: 10 for filename in get_setting('essential_files')}
+    use_hybrid = get_setting('use_hybrid_search', True)
+    use_reranker = get_setting('use_reranker', True)
 
-    similarities = {}
+    filtered_embeddings = {}
     for filename, data in embeddings.items():
         if filename in essential_files:
             continue
-        
         if not any(filename.endswith(ext) for ext in get_setting('extensions')):
             continue
         if filename in get_setting('ignore_files'):
             continue
         if any(ignore_folder in filename for ignore_folder in get_setting('ignore_folders')):
             continue
-        
-        similarity = cosine_similarity([query_embedding], [data['embedding']])[0][0]
-        if similarity >= similarity_threshold:
-            similarities[filename] = similarity
+        filtered_embeddings[filename] = data
 
-    sorted_files = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
-    
-    result = list(essential_files.items()) + sorted_files[:top_k - len(essential_files)]
-    
+    if use_hybrid and query_text:
+        from .hybrid_search import hybrid_search
+        from .config import BM25_WEIGHT, SEMANTIC_WEIGHT
+
+        similar_files = hybrid_search(
+            query_text,
+            query_embedding,
+            filtered_embeddings,
+            semantic_weight=SEMANTIC_WEIGHT,
+            bm25_weight=BM25_WEIGHT,
+            top_k=top_k * 2
+        )
+    else:
+        similarities = {}
+        for filename, data in filtered_embeddings.items():
+            similarity = cosine_similarity([query_embedding], [data['embedding']])[0][0]
+            if similarity >= similarity_threshold:
+                similarities[filename] = similarity
+
+        similar_files = sorted(similarities.items(), key=lambda item: item[1], reverse=True)
+
+    if use_reranker and query_text and similar_files:
+        from .reranker import rerank_documents
+        from .config import RERANKER_TOP_K
+
+        docs_to_rerank = []
+        for filename, score in similar_files[:100]:
+            if filename in embeddings:
+                docs_to_rerank.append({
+                    'filename': filename,
+                    'content': embeddings[filename].get('content', ''),
+                    'original_score': score
+                })
+
+        reranked = rerank_documents(query_text, docs_to_rerank, top_k=RERANKER_TOP_K)
+        similar_files = [(doc['filename'], doc['rerank_score']) for doc in reranked]
+
+    result = list(essential_files.items()) + similar_files[:top_k - len(essential_files)]
+
     return result[:top_k]
 
 def get_file_paths(folder_path):
@@ -102,24 +135,24 @@ def count_tokens(text):
     encoding = tiktoken.encoding_for_model(TOKEN_COUNTER_MODEL)
     return len(encoding.encode(text))
 
-def get_relevant_documents(folders, question_embedding, max_tokens=80000):
+def get_relevant_documents(folders, question_embedding, max_tokens=80000, query_text=None):
     relevant_docs = []
     total_tokens = 0
 
     for folder in folders:
         if not folder.endswith('/') and not folder.endswith('\\'):
             folder += '/'
-        
+
         embedding_file = os.path.join(folder, EMBEDDINGS_FILE)
         logging.debug(f"임베딩 파일 로드: {embedding_file}")
-        
+
         try:
             embeddings = load_embeddings(embedding_file)
         except Exception as e:
             logging.error(f"Error loading embeddings from {embedding_file}: {str(e)}")
             continue
 
-        similar_files = find_most_similar(question_embedding, embeddings)
+        similar_files = find_most_similar(question_embedding, embeddings, query_text=query_text)
         
         logging.debug(f"{folder}에서 유사도로 선택된 파일:")
         for filename, similarity in similar_files:
